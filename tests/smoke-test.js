@@ -174,6 +174,54 @@
       results.push('  ⚠ Удаление пропущено (одна карточка)');
     }
 
+    // 16. Производительность: точечное обновление при вводе
+    var titleInput2 = qa('input[data-field="title"]')[0];
+    if (titleInput2) {
+      titleInput2.focus();
+      var t0 = performance.now();
+      for (var k = 0; k < 20; k++) {
+        titleInput2.value = 'Perf test ' + k;
+        titleInput2.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      var elapsed = performance.now() - t0;
+      assert('20 нажатий < 50ms', elapsed < 50, 'elapsed=' + elapsed.toFixed(1) + 'ms');
+      assert('Превью обновилось', q('.card-title')?.textContent === 'Perf test 19');
+      // Фокус сохранён в поле ввода
+      assert('Фокус в поле ввода сохранён', document.activeElement === titleInput2);
+    }
+
+    // 17. Edge case: очистка поля (content→empty)
+    if (titleInput2) {
+      titleInput2.value = '';
+      titleInput2.dispatchEvent(new Event('input', { bubbles: true }));
+      // Должен сработать полный рендер (элемент удалён)
+      // Проверяем что карточка всё ещё рендерится
+      assert('Карточка рендерится после очистки', qa('.card').length >= 1);
+      // Восстановим заголовок
+      titleInput2.value = 'Восстановлен';
+      titleInput2.dispatchEvent(new Event('input', { bubbles: true }));
+      assert('Заголовок восстановлен', q('.card-title')?.textContent === 'Восстановлен');
+    }
+
+    // 18. listItems — точечное обновление списка
+    var listInput = qa('textarea[data-field="listItems"]')[0];
+    if (listInput) {
+      listInput.value = 'Один\nДва\nТри';
+      listInput.dispatchEvent(new Event('input', { bubbles: true }));
+      assert('Список: 3 пункта', qa('.card-list-item').length === 3);
+      // Изменим количество пунктов
+      listInput.value = 'Один\nДва';
+      listInput.dispatchEvent(new Event('input', { bubbles: true }));
+      assert('Список: 2 пункта после изменения', qa('.card-list-item').length === 2);
+      // Нумерация корректна
+      var nums = Array.from(qa('.card-list-num')).map(function(e){return e.textContent;});
+      assert('Нумерация списка корректна', nums[0] === '1.' && nums[1] === '2.');
+      // Очистим список
+      listInput.value = '';
+      listInput.dispatchEvent(new Event('input', { bubbles: true }));
+      assert('Список очищен', qa('.card-list-item').length === 0);
+    }
+
     results.push('');
     results.push('=== ИТОГ: ' + passed + ' passed, ' + failed + ' failed ===');
     console.log(results.join('\n'));

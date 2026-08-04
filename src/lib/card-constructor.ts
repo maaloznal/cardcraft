@@ -256,6 +256,32 @@ export function initCardConstructor(root: HTMLElement): () => void {
     }
   }
 
+  /* ---------- Измерение производительности ---------- */
+  const perfEnabled = typeof performance !== 'undefined' && performance.mark;
+  const perfCounts: Record<string, number> = {};
+  const perfTimes: Record<string, number> = {};
+  function perfMark(label: string): () => void {
+    if (!perfEnabled) return () => {};
+    const start = performance.now();
+    return () => {
+      const dur = performance.now() - start;
+      perfCounts[label] = (perfCounts[label] || 0) + 1;
+      perfTimes[label] = (perfTimes[label] || 0) + dur;
+      if (dur > 16) {
+        // Логируем только медленные вызовы (> 1 кадр)
+        console.warn('[Cardcraft:perf] Slow ' + label + ': ' + dur.toFixed(1) + 'ms');
+      }
+    };
+  }
+  function perfReport(): void {
+    if (!perfEnabled) return;
+    Object.keys(perfCounts).forEach((label) => {
+      const count = perfCounts[label];
+      const avg = (perfTimes[label] / count).toFixed(1);
+      console.log('[Cardcraft:perf] ' + label + ': ' + count + ' calls, avg ' + avg + 'ms');
+    });
+  }
+
   /* ---------- Ссылки на статические элементы ---------- */
   const $ = <T extends Element = HTMLElement>(sel: string): T | null => root.querySelector<T>(sel);
   const editorSidebar = $<HTMLElement>('#editorSidebar');
@@ -678,7 +704,8 @@ export function initCardConstructor(root: HTMLElement): () => void {
           cards[idx][field] = this.value as never;
           // фикс #14: очистка «осиротевших» стилей слов
           pruneOrphanWordStyles(cards[idx]);
-          renderPreview();
+          // Оптимизация: точечное обновление вместо полной перестройки
+          updatePreviewField(idx, field as string);
           scheduleSave({ silent: true });
           scheduleHistoryPush();
         });
@@ -697,7 +724,8 @@ export function initCardConstructor(root: HTMLElement): () => void {
           const idx = Number(this.dataset.index);
           (cards[idx][field as keyof Card] as string) = (this as HTMLInputElement).value;
           pruneOrphanWordStyles(cards[idx]);
-          renderPreview();
+          // Оптимизация: точечное обновление вместо полной перестройки
+          updatePreviewField(idx, field);
           scheduleSave({ silent: true });
           scheduleHistoryPush();
         });
@@ -735,8 +763,112 @@ export function initCardConstructor(root: HTMLElement): () => void {
     });
   }
 
-  /* ---------- Рендер превью ---------- */
+  /* ---------- Точечное обновление поля превью (без полной перестройки) ---------- */
+  // Оптимизация: при вводе текста обновляем только конкретный элемент,
+  // а не перестраиваем весь cardsArea. O(1) вместо O(n) на каждое нажатие.
+  function updatePreviewField(cardIndex: number, field: string): void {
+    const end = perfMark('updatePreviewField');
+    try {
+      const card = cards[cardIndex];
+      if (!card || !cardsArea) {
+        renderPreview();
+        return;
+      }
+      const cardNode = document.getElementById(`card-node-${card.id}`);
+      if (!cardNode) {
+        renderPreview();
+        return;
+      }
+
+      const value = (card[field as keyof Card] as string) || '';
+
+      // listItems — перестраиваем только секцию списка
+      if (field === 'listItems') {
+        updatePreviewList(cardNode, card, cardIndex);
+        updateEmptyHint(cardNode, card);
+        return;
+      }
+
+      const el = cardNode.querySelector<HTMLElement>(`[data-field="${field}"]`);
+
+      // Общий случай: элемент существует и есть контент — обновляем in-place
+      if (value && el) {
+        const styled = applyWordStylesToText(value, card.wordStyles, field);
+        el.innerHTML = field === 'subtitle' || field === 'text' ? styled.replace(/\n/g, '<br>') : styled;
+        return;
+      }
+
+      // Edge case: элемент не существует или контент пуст → полная перестройка
+      renderPreview();
+    } catch (err) {
+      console.error('[Cardcraft] Error in updatePreviewField:', err);
+      renderPreview();
+    } finally {
+      end();
+    }
+  }
+
+  // Перестройка только списка внутри карточки
+  function updatePreviewList(cardNode: HTMLElement, card: Card, cardIndex: number): void {
+    const listStyle = buildSectionStyle(card, 'list');
+    const listNumberStyle = card.colors?.listNumber
+      ? `style="--custom-color:${escapeHtml(card.colors.listNumber)};"`
+      : '';
+    const listNumberDataAttr = card.colors?.listNumber ? 'data-custom-color="true"' : '';
+
+    let listHtml = '';
+    if ((card.listItems || '').trim()) {
+      const items = card.listItems.split('\n').filter((i) => i.trim());
+      listHtml = items
+        .map(
+          (it, idx) => `<li class="card-list-item" ${listStyle}>
+            <span class="card-list-num" ${listNumberStyle} ${listNumberDataAttr}>${idx + 1}.</span>
+            <span class="card-list-text" ${listStyle} data-field="list" data-index="${cardIndex}">${applyWordStylesToText(it, card.wordStyles, 'list')}</span>
+          </li>`,
+        )
+        .join('');
+    }
+
+    const existingList = cardNode.querySelector<HTMLElement>('.card-list');
+    const topContent = cardNode.querySelector<HTMLElement>('.card-top-content');
+
+    if (existingList) {
+      if (listHtml) {
+        existingList.innerHTML = listHtml;
+      } else {
+        existingList.remove();
+      }
+    } else if (listHtml && topContent) {
+      // Вставляем список в конец top-content
+      const ul = document.createElement('ul');
+      ul.className = 'card-list';
+      ul.innerHTML = listHtml;
+      topContent.appendChild(ul);
+    }
+  }
+
+  // Обновление плейсхолдера пустой карточки
+  function updateEmptyHint(cardNode: HTMLElement, card: Card): void {
+    const hasContent =
+      card.title || card.subtitle || card.text || (card.listItems || '').trim() || card.footer || card.cta;
+    const existingHint = cardNode.querySelector<HTMLElement>('.card-empty-hint');
+    if (hasContent && existingHint) {
+      existingHint.remove();
+    } else if (!hasContent && !existingHint) {
+      const topContent = cardNode.querySelector<HTMLElement>('.card-top-content');
+      if (topContent) {
+        const hint = document.createElement('div');
+        hint.className = 'card-empty-hint';
+        hint.textContent = 'Карточка пуста — заполните поля в редакторе';
+        topContent.appendChild(hint);
+      }
+    }
+  }
+
+  /* ---------- Рендер превью (полная перестройка) ---------- */
   function renderPreview(): void {
+    const end = perfMark('renderPreview');
+    try {
     if (!cardsArea) return;
     cardsArea.innerHTML = '';
     const total = cards.length;
@@ -889,6 +1021,11 @@ export function initCardConstructor(root: HTMLElement): () => void {
       const word = n === 1 ? 'карточка' : n >= 2 && n <= 4 ? 'карточки' : 'карточек';
       cardCountBadge.textContent = `${n} ${word}`;
       cardCountBadge.style.display = n > 0 ? '' : 'none';
+    }
+    } catch (err) {
+      console.error('[Cardcraft] Error in renderPreview:', err);
+    } finally {
+      end();
     }
   }
 
@@ -1768,6 +1905,8 @@ export function initCardConstructor(root: HTMLElement): () => void {
     setSidebarOpen(false);
   }
   console.log('[Cardcraft] Initialized successfully:', cards.length, 'cards loaded');
+  // Экспонируем perfReport для тестирования из консоли
+  (window as unknown as { cardcraftPerfReport?: () => void }).cardcraftPerfReport = perfReport;
 
   // Возврат функции очистки (для React Strict Mode в dev)
   return () => {
