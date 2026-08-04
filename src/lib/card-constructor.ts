@@ -257,6 +257,8 @@ export function initCardConstructor(root: HTMLElement): () => void {
   const importJsonInput = $<HTMLInputElement>('#importJsonInput');
   const undoBtn = $<HTMLButtonElement>('#undoBtn');
   const redoBtn = $<HTMLButtonElement>('#redoBtn');
+  const wordPopupHeader = $<HTMLElement>('#wordPopupHeader');
+  const cardCountBadge = $<HTMLElement>('#cardCountBadge');
 
   /* ---------- Состояние ---------- */
   let cards: Card[] = [createEmptyCard()];
@@ -298,13 +300,29 @@ export function initCardConstructor(root: HTMLElement): () => void {
     };
   }
 
-  /* ---------- Toast ---------- */
+  /* ---------- Toast (с очередью, без перекрытий) ---------- */
+  const toastQueue: { msg: string; duration: number }[] = [];
+  let toastShowing = false;
+
   function showToast(msg: string, duration = 2500): void {
     if (!toast) return;
+    // Если текущий toast — прогресс пакетного скачивания (длинный), заменяем сразу
+    if (toastShowing && duration < 10000) {
+      toastQueue.push({ msg, duration });
+      return;
+    }
     toast.textContent = msg;
     toast.classList.add('show');
+    toastShowing = true;
     if (toastTimer) clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toast.classList.remove('show'), duration);
+    toastTimer = setTimeout(() => {
+      toast.classList.remove('show');
+      toastShowing = false;
+      if (toastQueue.length > 0) {
+        const next = toastQueue.shift()!;
+        setTimeout(() => showToast(next.msg, next.duration), 200);
+      }
+    }, duration);
   }
 
   /* ---------- Сохранение / загрузка ---------- */
@@ -717,6 +735,13 @@ export function initCardConstructor(root: HTMLElement): () => void {
       const themeAttr = cardTheme !== 'default' ? `data-theme="${cardTheme}"` : '';
       const formatAttr = currentFormat !== 'auto' ? `data-format="${currentFormat}"` : '';
 
+      // Плейсхолдер для пустой карточки
+      const hasContent =
+        card.title || card.subtitle || card.text || (card.listItems || '').trim() || card.footer || card.cta;
+      const emptyHint = !hasContent
+        ? `<div class="card-empty-hint">Карточка пуста — заполните поля в редакторе</div>`
+        : '';
+
       const wrapper = document.createElement('div');
       wrapper.className = 'card-wrapper';
       wrapper.innerHTML = `
@@ -724,6 +749,7 @@ export function initCardConstructor(root: HTMLElement): () => void {
           <div class="card-top-content" style="display:flex;flex-direction:column;gap:16px;">
             <div class="progress"><div class="progress-fill" style="width:${percent}%;"></div></div>
             <div class="tag"><span>${cardNum} / ${totalNum}</span><span></span></div>
+            ${emptyHint}
             ${
               card.title
                 ? `<h2 class="card-title" ${titleStyle} data-field="title" data-index="${index}">${applyWordStylesToText(
@@ -810,6 +836,14 @@ export function initCardConstructor(root: HTMLElement): () => void {
         e.stopPropagation();
       });
     });
+
+    // Обновление счётчика карточек в заголовке воркспейса
+    if (cardCountBadge) {
+      const n = cards.length;
+      const word = n === 1 ? 'карточка' : n >= 2 && n <= 4 ? 'карточки' : 'карточек';
+      cardCountBadge.textContent = `${n} ${word}`;
+      cardCountBadge.style.display = n > 0 ? '' : 'none';
+    }
   }
 
   /* ---------- Действия с карточками ---------- */
@@ -855,9 +889,11 @@ export function initCardConstructor(root: HTMLElement): () => void {
   }
 
   /* ---------- Модальное окно палитры ---------- */
+  let lastFocusedBeforeModal: HTMLElement | null = null;
+
   function selectRowField(field: string): void {
     lastActiveField = field;
-    const label = $('span.active-target, #presetTargetLabel');
+    const label = $<HTMLElement>('#presetTargetLabel');
     if (label) label.textContent = FIELD_LABELS[field] || 'Заголовок';
     root.querySelectorAll<HTMLElement>('.color-picker-row').forEach((row) => {
       if (row.dataset.rowField === field) row.classList.add('selected');
@@ -934,6 +970,9 @@ export function initCardConstructor(root: HTMLElement): () => void {
     selectRowField('title');
     colorModal?.classList.add('active');
     previewWorkspace?.classList.add('modal-open');
+    // Фокус-менеджмент: переносим фокус в модалку
+    lastFocusedBeforeModal = document.activeElement as HTMLElement;
+    setTimeout(() => closeModalBtn?.focus(), 50);
   }
 
   function closeColorModal(): void {
@@ -950,6 +989,9 @@ export function initCardConstructor(root: HTMLElement): () => void {
         root.classList.add('sidebar-open');
       }
     }
+    // Возвращаем фокус на элемент, который открыл модалку
+    lastFocusedBeforeModal?.focus?.();
+    lastFocusedBeforeModal = null;
   }
 
   /* ---------- Попап настройки слова ---------- */
@@ -963,6 +1005,13 @@ export function initCardConstructor(root: HTMLElement): () => void {
     activeFieldForWord = field;
     activeCardIndexForWord = cardIndex;
     activeWordStyles = { text: selectedText };
+
+    // Заголовок попапа: показываем стилизуемое слово и поле
+    if (wordPopupHeader) {
+      const fieldLabel = FIELD_LABELS[field] || field;
+      const displayWord = selectedText.length > 28 ? selectedText.slice(0, 27) + '…' : selectedText;
+      wordPopupHeader.innerHTML = `<span class="wp-header-label">${escapeHtml(fieldLabel)}:</span> <span class="wp-header-word">${escapeHtml(displayWord)}</span>`;
+    }
 
     const key = `${field}::${selectedText}`;
     const existing = cards[cardIndex].wordStyles?.[key];
@@ -1105,20 +1154,37 @@ export function initCardConstructor(root: HTMLElement): () => void {
   async function copyCardToClipboard(node: HTMLElement): Promise<void> {
     try {
       if (!window.isSecureContext) {
-        showToast('❌ Копирование требует HTTPS. Используйте «Скачать PNG».');
+        showToast('❌ Копирование требует HTTPS. Скачиваю PNG вместо копирования…');
+        await generateAndDownloadPng(node, 'card-copy.png');
         return;
       }
       const blob = await withExportMode(node, () =>
         toBlob(node, { pixelRatio: CONFIG.EXPORT_PIXEL_RATIO, cacheBust: true }),
       );
-      if (blob && navigator.clipboard && window.ClipboardItem) {
-        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-        showToast('Карточка скопирована в буфер!');
-      } else {
-        showToast('Копирование не поддерживается браузером');
+      if (!blob) {
+        showToast('❌ Не удалось создать изображение');
+        return;
       }
-    } catch {
-      showToast('Ошибка при копировании');
+      if (!navigator.clipboard || !window.ClipboardItem) {
+        showToast('Буфер обмена не поддерживается. Скачиваю PNG…');
+        await generateAndDownloadPng(node, 'card-copy.png');
+        return;
+      }
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      showToast('Карточка скопирована в буфер!');
+    } catch (err) {
+      // Часто падает из-за отсутствия user-gesture или прав — фолбэк на скачивание
+      const name = (err as Error)?.name || '';
+      if (name === 'NotAllowedError') {
+        showToast('❌ Нет прав на буфер обмена. Скачиваю PNG…');
+      } else {
+        showToast('❌ Копирование не удалось. Скачиваю PNG…');
+      }
+      try {
+        await generateAndDownloadPng(node, 'card-copy.png');
+      } catch {
+        /* уже показали ошибку */
+      }
     }
   }
 
@@ -1472,6 +1538,27 @@ export function initCardConstructor(root: HTMLElement): () => void {
       renderPreview();
       scheduleSave({ silent: true });
       showToast('Все кастомные цвета и стили карточки сброшены');
+    });
+
+    // Кнопка «Сбросить стиль слова» — убирает все стили с текущего слова
+    $<HTMLButtonElement>('#wordClearBtn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (activeCardIndexForWord === null || !activeWordStyles.text || !activeFieldForWord) return;
+      const key = `${activeFieldForWord}::${activeWordStyles.text}`;
+      pushHistory();
+      delete cards[activeCardIndexForWord].wordStyles?.[key];
+      // Сбрасываем активные стили
+      activeWordStyles = { text: activeWordStyles.text };
+      root.querySelectorAll<HTMLElement>('.format-btn').forEach((b) => b.classList.remove('active'));
+      root.querySelectorAll<HTMLElement>('.color-preset').forEach((p) => p.classList.remove('active'));
+      if (sizeSlider && sizeValue) {
+        sizeSlider.value = '16';
+        sizeValue.textContent = '16px';
+      }
+      renderPreview();
+      renderWordStyleList();
+      scheduleSave({ silent: true });
+      showToast('Стиль слова сброшен');
     });
 
     // Попап слова: форматы

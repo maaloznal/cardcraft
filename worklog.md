@@ -138,3 +138,36 @@ Work Log (verified in-browser via agent-browser):
 
 Stage Summary:
 - All 26 review fixes implemented AND browser-verified. App fully functional at / (port 3000).
+
+---
+Task ID: 5
+Agent: main
+Task: Continued improvements — UX polish, accessibility, error handling, visual feedback.
+
+Work Log:
+- Toast queue: replaced single-toast with a queue system; rapid toasts no longer overlap (short toasts queue, long progress toasts replace immediately).
+- Empty card placeholder: cards with no content show a dashed "Карточка пуста — заполните поля в редакторе" hint (hidden during PNG export).
+- Word popup header: popup now shows the field name + selected word at the top (e.g. "Заголовок: Стиль") so user knows what they're styling.
+- Card count badge: workspace header shows total card count with Russian pluralization (1 карточка / 2 карточки / 5 карточек).
+- Copy fallback: when clipboard write fails (NotAllowedError, no ClipboardItem, non-secure context), automatically falls back to PNG download with a specific toast message.
+- Focus management: opening the color modal moves focus to the close button; closing returns focus to the triggering element (accessibility).
+- Clear word style button: "✕ Сбросить стиль слова" button in the word popup removes all styling from the current word in one click (with toast feedback + undo support).
+- Card hover effect: subtle accent ring (box-shadow with --accent-color) appears on card hover in the preview.
+- Accessibility: added aria-labels to all icon-only buttons (add card, save all, toggle sidebar, etc.).
+- Keyboard shortcut hints: title attributes now show shortcuts (Ctrl+S on save, Ctrl+Z on undo, Ctrl+Y on redo).
+- Fixed cross-origin dev warning: added `allowedDevOrigins: ["*.space-z.ai"]` to next.config.ts.
+- Cleaned up redundant selector in selectRowField (was `$('span.active-target, #presetTargetLabel')`, now just `$('#presetTargetLabel')`).
+
+Verification (Agent Browser):
+- Badge updates correctly: 1→2→1 cards with proper pluralization ("1 карточка", "2 карточки", "4 карточки").
+- Empty placeholder shows on empty card, disappears when content added.
+- Word popup header shows "Заголовок: Стиль" (field: word).
+- Clear word style button: styled span removed, toast "Стиль слова сброшен".
+- Copy fallback: clipboard failure → "Карточка успешно скачана!" (PNG download).
+- Focus management: modal open → focus on close button (×); Escape closes modal.
+- Toast queue: 3 rapid addCard clicks → toasts queue (first shows immediately, rest follow).
+- Mobile (375px): badge visible, sidebar drawer opens, backdrop shows.
+- Lint: 0 errors, 0 warnings. Dev log: clean, no cross-origin warning. Browser: 0 errors.
+
+Stage Summary:
+- 12 additional improvements implemented and browser-verified. App is more polished, accessible, and resilient.

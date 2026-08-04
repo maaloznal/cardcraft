@@ -80,7 +80,7 @@ export default function Home() {
             style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
           />
 
-          <button className="btn-add" id="addCardBtn">
+          <button className="btn-add" id="addCardBtn" aria-label="Добавить новую карточку">
             + Добавить карточку
           </button>
 
@@ -105,7 +105,7 @@ export default function Home() {
             />
           </div>
 
-          <button className="btn-primary" id="saveChangesBtn" style={{ marginTop: 12 }}>
+          <button className="btn-primary" id="saveChangesBtn" style={{ marginTop: 12 }} title="Сохранить (Ctrl+S)">
             💾 Сохранить изменения
           </button>
         </aside>
@@ -124,17 +124,22 @@ export default function Home() {
         {/* ================= Превью ================= */}
         <main className="preview-workspace" id="previewWorkspace">
           <div className="workspace-header">
-            <h2
-              style={{
-                margin: 0,
-                fontSize: 18,
-                color: 'var(--text-secondary)',
-                fontWeight: 500,
-              }}
-            >
-              Предпросмотр карточек
-            </h2>
-            <button className="btn-primary" id="saveAll">
+            <div className="workspace-title-group">
+              <h2
+                style={{
+                  margin: 0,
+                  fontSize: 18,
+                  color: 'var(--text-secondary)',
+                  fontWeight: 500,
+                }}
+              >
+                Предпросмотр карточек
+              </h2>
+              <span className="card-count-badge" id="cardCountBadge" aria-live="polite">
+                1 карточка
+              </span>
+            </div>
+            <button className="btn-primary" id="saveAll" aria-label="Скачать все карточки как PNG">
               Скачать все PNG
             </button>
           </div>
@@ -241,6 +246,15 @@ export default function Home() {
 
       {/* ================= Попап настройки слова ================= */}
       <div className="word-style-popup" id="wordStylePopup" role="dialog" aria-label="Настройка слова">
+        <div className="word-popup-header" id="wordPopupHeader" />
+        <button
+          className="word-clear-btn"
+          id="wordClearBtn"
+          type="button"
+          title="Убрать все стили с этого слова"
+        >
+          ✕ Сбросить стиль слова
+        </button>
         <div className="popup-section">
           <div className="popup-section-title">
             <span>ТЕКСТ</span>

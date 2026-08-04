@@ -1821,3 +1821,95 @@ input[type="color"].color-picker-input::-webkit-color-swatch {
 .cc-root.exporting .cc-styled-word {
   text-decoration: none !important;
 }
+
+/* ================= Improvement: empty card placeholder ================= */
+.card-empty-hint {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: center;
+  padding: 40px 16px;
+  opacity: 0.6;
+  font-style: italic;
+  border: 2px dashed var(--card-border);
+  border-radius: 8px;
+  margin: 8px 0;
+}
+.cc-root.exporting .card-empty-hint {
+  display: none !important;
+}
+
+/* ================= Improvement: word popup header (shows target word) ================= */
+.word-popup-header {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding-bottom: 10px;
+  margin-bottom: 4px;
+  border-bottom: 2px solid #eef2ff;
+}
+.wp-header-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.wp-header-word {
+  font-size: 15px;
+  font-weight: 700;
+  color: #4f46e5;
+  word-break: break-word;
+  max-width: 240px;
+}
+
+/* ================= Improvement: card count badge in workspace header ================= */
+.workspace-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.card-count-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  background: #eef2ff;
+  color: #4338ca;
+  border: 1px solid #c7d2fe;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+/* ================= Improvement: clear-word-style button ================= */
+.word-clear-btn {
+  display: block;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 6px 10px;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+.word-clear-btn:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
+/* ================= Improvement: subtle card hover in preview ================= */
+.cc-root .card {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.cc-root .card-wrapper:hover .card {
+  box-shadow: 0 0 0 1px var(--accent-color), var(--card-shadow);
+}
