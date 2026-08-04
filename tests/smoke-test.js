@@ -231,9 +231,9 @@
       listInput.value = 'Один\nДва';
       listInput.dispatchEvent(new Event('input', { bubbles: true }));
       assert('Список: 2 пункта после изменения', qa('.card-list-item').length === 2);
-      // Нумерация корректна
+      // Нумерация корректна (число без точки — точка добавляется CSS)
       var nums = Array.from(qa('.card-list-num')).map(function(e){return e.textContent;});
-      assert('Нумерация списка корректна', nums[0] === '1.' && nums[1] === '2.');
+      assert('Нумерация списка корректна', nums[0] === '1' && nums[1] === '2');
       // Очистим список
       listInput.value = '';
       listInput.dispatchEvent(new Event('input', { bubbles: true }));
@@ -252,21 +252,19 @@
     q('#numberingToggle').click();
     assert('Тег виден после включения', getComputedStyle(tagEl).display !== 'none');
 
-    // 20. Task 8: Стили sidebar
-    assert('Select стиля sidebar существует', !!q('#sidebarStyleSelect'));
-    var sbStyles = ['minimal','outline','accent','glass','flat','premium'];
-    sbStyles.forEach(function(s) {
-      q('#sidebarStyleSelect').value = s;
-      q('#sidebarStyleSelect').dispatchEvent(new Event('change', {bubbles: true}));
-      assert('Sidebar стиль ' + s, q('#editorSidebar').classList.contains('sb-' + s));
+    // 20. БАГ#1: Стили progress bar
+    assert('Select стиля progress bar существует', !!q('#progressBarStyleSelect'));
+    var pbStyles = ['default','thin','glow','dots','gradient','hidden'];
+    pbStyles.forEach(function(s) {
+      q('#progressBarStyleSelect').value = s;
+      q('#progressBarStyleSelect').dispatchEvent(new Event('change', {bubbles: true}));
+      assert('Progress стиль ' + s, q('.cc-root').getAttribute('data-progress-style') === s);
     });
-    // Hidden
-    q('#sidebarStyleSelect').value = 'hidden';
-    q('#sidebarStyleSelect').dispatchEvent(new Event('change', {bubbles: true}));
-    assert('Sidebar скрыт', q('.cc-root').classList.contains('sb-hidden'));
-    // Вернём minimal
-    q('#sidebarStyleSelect').value = 'minimal';
-    q('#sidebarStyleSelect').dispatchEvent(new Event('change', {bubbles: true}));
+    // Hidden — progress скрыт
+    assert('Progress hidden скрывает элемент', getComputedStyle(q('.progress')).display === 'none');
+    // Вернём default
+    q('#progressBarStyleSelect').value = 'default';
+    q('#progressBarStyleSelect').dispatchEvent(new Event('change', {bubbles: true}));
 
     // 21. Task 9: Стили списков
     assert('Select стиля списков существует', !!q('#listStyleSelect'));
@@ -292,6 +290,71 @@
       titleForId.dispatchEvent(new Event('input', {bubbles: true}));
       assert('H3 обновился', q('.card-editor-title-group h3')?.textContent === 'Тест идентификации');
     }
+
+    // 23. БАГ#2: Точки в нумерации списков
+    var listForBug2 = qa('textarea[data-field="listItems"]')[0];
+    if (listForBug2) {
+      listForBug2.value = 'Один\nДва';
+      listForBug2.dispatchEvent(new Event('input', {bubbles: true}));
+      // numbers: текст "1", CSS добавляет "." → отображается "1."
+      q('#listStyleSelect').value = 'numbers';
+      q('#listStyleSelect').dispatchEvent(new Event('change', {bubbles: true}));
+      var numText = q('.card-list-num')?.textContent;
+      var numAfter = getComputedStyle(q('.card-list-num'), '::after').content;
+      assert('Numbers: число без точки в HTML', numText === '1');
+      assert('Numbers: CSS добавляет одну точку', numAfter === '"."');
+      // circles: без точки
+      q('#listStyleSelect').value = 'circles';
+      q('#listStyleSelect').dispatchEvent(new Event('change', {bubbles: true}));
+      var circAfter = getComputedStyle(q('.card-list-num'), '::after').content;
+      assert('Circles: без точки после номера', circAfter === '""');
+      // squares: без точки
+      q('#listStyleSelect').value = 'squares';
+      q('#listStyleSelect').dispatchEvent(new Event('change', {bubbles: true}));
+      var sqAfter = getComputedStyle(q('.card-list-num'), '::after').content;
+      assert('Squares: без точки после номера', sqAfter === '""');
+      q('#listStyleSelect').value = 'numbers';
+      q('#listStyleSelect').dispatchEvent(new Event('change', {bubbles: true}));
+    }
+
+    // 24. БАГ#3: Независимый цвет номера списка
+    // Сначала заполним список (тест 23 мог его очистить)
+    var listForBug3 = qa('textarea[data-field="listItems"]')[0];
+    if (listForBug3) {
+      listForBug3.value = 'Один\nДва';
+      listForBug3.dispatchEvent(new Event('input', {bubbles: true}));
+    }
+    q('[data-action="palette"]')?.click();
+    var listColorInput = q('#col-list');
+    var listNumColorInput = q('#col-listNumber');
+    if (listColorInput && listNumColorInput) {
+      listColorInput.value = '#2563eb';
+      listColorInput.dispatchEvent(new Event('input', {bubbles: true}));
+      listNumColorInput.value = '#dc2626';
+      listNumColorInput.dispatchEvent(new Event('input', {bubbles: true}));
+      q('#applyColorsBtn').click();
+      var numEl = q('.card-list-num');
+      var textEl = q('.card-list-text');
+      assert('Цвет номера не совпадает с текстом', getComputedStyle(numEl).color !== getComputedStyle(textEl).color);
+      assert('Цвет номера красный', /220,\s*38,\s*38/.test(getComputedStyle(numEl).color));
+      assert('Цвет текста синий', /37,\s*99,\s*235/.test(getComputedStyle(textEl).color));
+    }
+
+    // 25. Улучшение#1: Независимая прокрутка редактора
+    assert('Fixed header существует', !!q('.sidebar-fixed-header'));
+    assert('Scroll area существует', !!q('.sidebar-scroll-area'));
+    assert('Scroll area имеет overflow-y auto', getComputedStyle(q('.sidebar-scroll-area')).overflowY === 'auto');
+
+    // 26. Улучшение#2: Аккордеон в редакторе стилей
+    q('[data-action="palette"]')?.click();
+    assert('Аккордеон группы существуют', qa('.modal-accordion-group').length >= 3);
+    assert('Все группы раскрыты по умолчанию', qa('.modal-accordion-group.expanded').length === 3);
+    // Свернём первую
+    q('.modal-accordion-header').click();
+    assert('Сворачивание работает', qa('.modal-accordion-group.expanded').length === 2);
+    q('.modal-accordion-header').click();
+    assert('Разворачивание работает', qa('.modal-accordion-group.expanded').length === 3);
+    q('#applyColorsBtn').click();
 
     results.push('');
     results.push('=== ИТОГ: ' + passed + ' passed, ' + failed + ' failed ===');

@@ -297,7 +297,7 @@ export function initCardConstructor(root: HTMLElement): () => void {
   const gradientAngleSlider = $<HTMLInputElement>('#gradientAngleSlider');
   const gradientAngleValue = $<HTMLElement>('#gradientAngleValue');
   const numberingToggle = $<HTMLInputElement>('#numberingToggle');
-  const sidebarStyleSelect = $<HTMLSelectElement>('#sidebarStyleSelect');
+  const progressBarStyleSelect = $<HTMLSelectElement>('#progressBarStyleSelect');
   const listStyleSelect = $<HTMLSelectElement>('#listStyleSelect');
   const previewWorkspace = $<HTMLElement>('#previewWorkspace');
   const toast = $<HTMLElement>('#toast');
@@ -330,7 +330,7 @@ export function initCardConstructor(root: HTMLElement): () => void {
   let currentFormat = 'auto';
   let gradientAngle = 135; // угол градиента для градиентных тем (0-360)
   let showCardNumbers = true; // Task 7: отображение нумерации карточек
-  let sidebarStyle = 'minimal'; // Task 8: стиль sidebar (minimal/outline/accent/glass/flat/premium/hidden)
+  let progressBarStyle = 'default'; // БАГ#1: стиль шкалы прогресса (default/thin/glow/dots/gradient/hidden)
   let listStyleType = 'numbers'; // Task 9: стиль списков (numbers/bullets/dashes/circles/squares/decorative)
   let activeCardIndexForColors: number | null = null;
   let lastActiveField = 'title';
@@ -419,7 +419,7 @@ export function initCardConstructor(root: HTMLElement): () => void {
         localStorage.setItem('flashcard-theme', currentTheme);
         localStorage.setItem('flashcard-format', currentFormat);
         localStorage.setItem('flashcard-show-numbers', String(showCardNumbers));
-        localStorage.setItem('flashcard-sidebar-style', sidebarStyle);
+        localStorage.setItem('flashcard-progress-style', progressBarStyle);
         localStorage.setItem('flashcard-list-style', listStyleType);
         localStorage.setItem('flashcard-gradient-angle', String(gradientAngle));
         if (!silent) showToast('Карточки успешно сохранены!');
@@ -444,7 +444,7 @@ export function initCardConstructor(root: HTMLElement): () => void {
     const savedTheme = localStorage.getItem('flashcard-theme');
     const savedFormat = localStorage.getItem('flashcard-format');
     const savedShowNumbers = localStorage.getItem('flashcard-show-numbers');
-    const savedSidebarStyle = localStorage.getItem('flashcard-sidebar-style');
+    const savedProgressBarStyle = localStorage.getItem('flashcard-progress-style');
     const savedListStyle = localStorage.getItem('flashcard-list-style');
     const savedGradientAngle = localStorage.getItem('flashcard-gradient-angle');
     if (savedCards) {
@@ -472,9 +472,9 @@ export function initCardConstructor(root: HTMLElement): () => void {
       showCardNumbers = savedShowNumbers === 'true';
       if (numberingToggle) numberingToggle.checked = showCardNumbers;
     }
-    if (savedSidebarStyle) {
-      sidebarStyle = savedSidebarStyle;
-      if (sidebarStyleSelect) sidebarStyleSelect.value = savedSidebarStyle;
+    if (savedProgressBarStyle) {
+      progressBarStyle = savedProgressBarStyle;
+      if (progressBarStyleSelect) progressBarStyleSelect.value = savedProgressBarStyle;
     }
     if (savedListStyle) {
       listStyleType = savedListStyle;
@@ -488,7 +488,7 @@ export function initCardConstructor(root: HTMLElement): () => void {
     applyThemeToWorkspace();
     applyNumberingVisibility();
     applyListStyle();
-    applySidebarStyle();
+    applyProgressBarStyle();
   }
 
   function migrateCard(card: Partial<Card>): Card {
@@ -668,26 +668,10 @@ export function initCardConstructor(root: HTMLElement): () => void {
     root.classList.toggle('no-card-numbers', !showCardNumbers);
   }
 
-  /* ---------- Task 8: Применение стиля sidebar ---------- */
-  function applySidebarStyle(): void {
-    if (!editorSidebar || !root) return;
-    // Удаляем все предыдущие классы стилей
-    const styleClasses = ['sb-minimal', 'sb-outline', 'sb-accent', 'sb-glass', 'sb-flat', 'sb-premium'];
-    styleClasses.forEach((cls) => editorSidebar!.classList.remove(cls));
-    if (sidebarStyle === 'hidden') {
-      setSidebarOpen(false);
-      // Скрываем toggle кнопку тоже
-      toggleSidebarBtn?.classList.add('hidden-toggle');
-      root.classList.add('sb-hidden');
-    } else {
-      toggleSidebarBtn?.classList.remove('hidden-toggle');
-      root.classList.remove('sb-hidden');
-      editorSidebar.classList.add(`sb-${sidebarStyle}`);
-      // На desktop открываем sidebar автоматически при выборе видимого стиля
-      if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
-        setSidebarOpen(true);
-      }
-    }
+  /* ---------- БАГ#1: Применение стиля шкалы прогресса ---------- */
+  function applyProgressBarStyle(): void {
+    if (!root) return;
+    root.setAttribute('data-progress-style', progressBarStyle);
   }
 
   /* ---------- Task 9: Применение стиля списков ---------- */
@@ -977,6 +961,22 @@ export function initCardConstructor(root: HTMLElement): () => void {
         return;
       }
 
+      // БАГ#3: listNumber — обновляем цвет номеров списка (color хранится в card.colors.listNumber)
+      if (field === 'listNumber') {
+        const numColor = card.colors?.listNumber;
+        const nums = cardNode.querySelectorAll<HTMLElement>('.card-list-num');
+        nums.forEach((num) => {
+          if (numColor) {
+            num.style.setProperty('--custom-color', numColor);
+            num.setAttribute('data-custom-color', 'true');
+          } else {
+            num.style.removeProperty('--custom-color');
+            num.removeAttribute('data-custom-color');
+          }
+        });
+        return;
+      }
+
       const el = cardNode.querySelector<HTMLElement>(`[data-field="${field}"]`);
 
       // Случай 1: есть контент, элемент существует → обновляем in-place
@@ -1166,7 +1166,7 @@ export function initCardConstructor(root: HTMLElement): () => void {
       listHtml = items
         .map(
           (it, idx) => `<li class="card-list-item" ${listStyle}>
-            <span class="card-list-num" ${listNumberStyle} ${listNumberDataAttr}>${idx + 1}.</span>
+            <span class="card-list-num" ${listNumberStyle} ${listNumberDataAttr}>${idx + 1}</span>
             <span class="card-list-text" ${listStyle} data-field="list" data-index="${cardIndex}">${applyWordStylesToText(it, card.wordStyles, 'list')}</span>
           </li>`,
         )
@@ -1241,7 +1241,7 @@ export function initCardConstructor(root: HTMLElement): () => void {
           .map(
             (it, idx) => `
               <li class="card-list-item" ${listStyle}>
-                <span class="card-list-num" ${listNumberStyle} ${listNumberDataAttr}>${idx + 1}.</span>
+                <span class="card-list-num" ${listNumberStyle} ${listNumberDataAttr}>${idx + 1}</span>
                 <span class="card-list-text" ${listStyle} data-field="list" data-index="${index}">${applyWordStylesToText(
                   it,
                   card.wordStyles,
@@ -1956,10 +1956,10 @@ export function initCardConstructor(root: HTMLElement): () => void {
       scheduleSave({ silent: true });
     });
 
-    // Task 8: Выбор стиля sidebar
-    sidebarStyleSelect?.addEventListener('change', function () {
-      sidebarStyle = this.value;
-      applySidebarStyle();
+    // БАГ#1: Выбор стиля шкалы прогресса
+    progressBarStyleSelect?.addEventListener('change', function () {
+      progressBarStyle = this.value;
+      applyProgressBarStyle();
       scheduleSave({ silent: true });
     });
 
@@ -2177,6 +2177,15 @@ export function initCardConstructor(root: HTMLElement): () => void {
         // Точечное обновление конкретного поля карточки
         updateCardField(activeCardIndexForColors, field);
         scheduleSave({ silent: true });
+      });
+    });
+
+    // Улучшение#2: Аккордеон в редакторе стилей
+    root.querySelectorAll<HTMLElement>('[data-accordion-toggle]').forEach((header) => {
+      header.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const group = header.closest('.modal-accordion-group');
+        group?.classList.toggle('expanded');
       });
     });
 

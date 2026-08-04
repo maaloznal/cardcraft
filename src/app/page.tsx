@@ -27,6 +27,13 @@ const MODAL_ROWS = [
   { key: 'cta', label: 'Кнопка / CTA', defaultSize: 16, hasStyleControls: true },
 ];
 
+// Улучшение#2: Группировка полей модалки в аккордеон-разделы
+const MODAL_GROUPS = [
+  { label: 'Заголовок и подзаголовок', keys: ['title', 'subtitle'] },
+  { label: 'Текст и список', keys: ['text', 'list', 'listNumber'] },
+  { label: 'Итог и кнопка', keys: ['footer', 'cta'] },
+];
+
 const PRESETS = [
   '#0f172a', '#4f46e5', '#2563eb', '#059669',
   '#ea580c', '#dc2626', '#ec4899', '#7c3aed',
@@ -81,6 +88,7 @@ export default function Home() {
       <div className="app-layout">
         {/* Sidebar */}
         <aside className="editor-sidebar collapsed" id="editorSidebar">
+          <div className="sidebar-fixed-header">
           <div className="sidebar-section">
             <label className="sidebar-label">Тема оформления</label>
             {/* Скрытый native select для совместимости с TS логикой */}
@@ -154,16 +162,15 @@ export default function Home() {
           </div>
 
           <div className="sidebar-section">
-            <label className="sidebar-label" htmlFor="sidebarStyleSelect">
-              Стиль панели
+            <label className="sidebar-label" htmlFor="progressBarStyleSelect">
+              Шкала прогресса
             </label>
-            <select id="sidebarStyleSelect" defaultValue="minimal">
-              <option value="minimal">Минималистичный</option>
-              <option value="outline">Тонкий контур</option>
-              <option value="accent">Акцентный</option>
-              <option value="glass">Стеклянный</option>
-              <option value="flat">Современный плоский</option>
-              <option value="premium">Премиальный</option>
+            <select id="progressBarStyleSelect" defaultValue="default">
+              <option value="default">Стандартная</option>
+              <option value="thin">Тонкая</option>
+              <option value="glow">Светящаяся</option>
+              <option value="dots">Точечная</option>
+              <option value="gradient">Градиентная</option>
               <option value="hidden">Скрыть</option>
             </select>
           </div>
@@ -192,7 +199,9 @@ export default function Home() {
               </label>
             </div>
           </div>
+          </div>
 
+          <div className="sidebar-scroll-area">
           <div id="editorCardsList" />
 
           <div className="sidebar-section" style={{ borderBottom: 'none', paddingTop: 0 }}>
@@ -229,6 +238,7 @@ export default function Home() {
           <button className="btn-primary" id="saveChangesBtn" title="Сохранить (Ctrl+S)" type="button">
             Сохранить
           </button>
+          </div>
         </aside>
 
         <div className="sidebar-backdrop" id="sidebarBackdrop" />
@@ -267,61 +277,75 @@ export default function Home() {
           </div>
 
           <div className="color-picker-grid">
-            {MODAL_ROWS.map((row) => (
-              <div className="color-picker-row" data-row-field={row.key} key={row.key}>
-                <span className="color-picker-label">{row.label}</span>
-                <div className="color-picker-controls">
-                  <span className="color-hex-text is-auto" id={`hex-${row.key}`}>
-                    АВТО
-                  </span>
-                  <input
-                    type="color"
-                    className="color-picker-input"
-                    id={`col-${row.key}`}
-                    data-field={row.key}
-                    aria-label={`Цвет: ${row.label}`}
-                  />
-                  <button
-                    className="btn-reset-single"
-                    data-reset={row.key}
-                    title="Сбросить цвет"
-                    aria-label={`Сбросить цвет: ${row.label}`}
-                    type="button"
-                  >
-                    ✕
-                  </button>
+            {MODAL_GROUPS.map((group) => (
+              <div className="modal-accordion-group expanded" key={group.label}>
+                <button className="modal-accordion-header" type="button" data-accordion-toggle>
+                  <span>{group.label}</span>
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div className="modal-accordion-body">
+                  {group.keys.map((key) => {
+                    const row = MODAL_ROWS.find((r) => r.key === key);
+                    if (!row) return null;
+                    return (
+                      <div className="color-picker-row" data-row-field={row.key} key={row.key}>
+                        <span className="color-picker-label">{row.label}</span>
+                        <div className="color-picker-controls">
+                          <span className="color-hex-text is-auto" id={`hex-${row.key}`}>
+                            АВТО
+                          </span>
+                          <input
+                            type="color"
+                            className="color-picker-input"
+                            id={`col-${row.key}`}
+                            data-field={row.key}
+                            aria-label={`Цвет: ${row.label}`}
+                          />
+                          <button
+                            className="btn-reset-single"
+                            data-reset={row.key}
+                            title="Сбросить цвет"
+                            aria-label={`Сбросить цвет: ${row.label}`}
+                            type="button"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                        {row.hasStyleControls && (
+                          <div className="section-style-controls">
+                            <div className="text-format-controls">
+                              {FORMAT_BTNS.map((b) => (
+                                <button
+                                  key={b.fmt}
+                                  className="format-btn-section"
+                                  data-field={row.key}
+                                  data-format={b.fmt}
+                                  title={b.title}
+                                  type="button"
+                                >
+                                  {b.label}
+                                </button>
+                              ))}
+                            </div>
+                            <div className="size-control-section">
+                              <input
+                                type="range"
+                                className="size-slider-section"
+                                data-field={row.key}
+                                min={10}
+                                max={48}
+                                defaultValue={row.defaultSize}
+                              />
+                              <span className="size-value-section" data-field={row.key}>
+                                {row.defaultSize}px
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-                {row.hasStyleControls && (
-                  <div className="section-style-controls">
-                    <div className="text-format-controls">
-                      {FORMAT_BTNS.map((b) => (
-                        <button
-                          key={b.fmt}
-                          className="format-btn-section"
-                          data-field={row.key}
-                          data-format={b.fmt}
-                          title={b.title}
-                          type="button"
-                        >
-                          {b.label}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="size-control-section">
-                      <input
-                        type="range"
-                        className="size-slider-section"
-                        data-field={row.key}
-                        min={10}
-                        max={48}
-                        defaultValue={row.defaultSize}
-                      />
-                      <span className="size-value-section" data-field={row.key}>
-                        {row.defaultSize}px
-                      </span>
-                    </div>
-                  </div>
-                )}
               </div>
             ))}
           </div>

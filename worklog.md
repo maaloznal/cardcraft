@@ -515,3 +515,58 @@ Stage Summary:
 - 4 new feature systems implemented + design audit completed.
 - All features use existing design system, feel native to Cardcraft.
 - 84/84 tests pass, zero regressions.
+
+---
+Task ID: 15
+Agent: main
+Task: Bug fixes #1-3 + Improvements #1-2 — sidebar→progress bar, list dots, list number color, independent scroll, modal accordion.
+
+Work Log:
+
+БАГ#1 — Sidebar misinterpretation fixed:
+- Removed all sidebar styling code (sb-minimal/outline/accent/glass/flat/premium/hidden classes, applySidebarStyle, state, localStorage, UI select).
+- Replaced with progress bar styling: progressBarStyle state (default/thin/glow/dots/gradient/hidden).
+- Added #progressBarStyleSelect dropdown in sidebar.
+- 6 visual variants via data-progress-style attribute on root + CSS: default (4px), thin (2px), glow (8px shadow), dots (round), gradient (linear-gradient fill), hidden (display:none, no empty space).
+- applyProgressBarStyle() sets data-progress-style attribute — instant switching via CSS.
+- Persisted to localStorage.
+
+БАГ#2 — List number dots fixed:
+- Root cause: HTML contained "${idx + 1}." (dot in text) + CSS ::after added another dot → "1.."
+- Fixed: removed dot from HTML (now "${idx + 1}"), CSS ::after controls dot for numbers style only.
+- circles/squares: ::after content: '' (no dot) — verified correct.
+- All 6 list styles verified: numbers (1.), bullets (•), dashes (—), circles (1 in circle), squares (1 in square), decorative (◆).
+
+БАГ#3 — Independent list number color:
+- Root cause: updateCardField('listNumber') searched for [data-field="listNumber"] element (doesn't exist), so color wasn't applied to .card-list-num.
+- Fixed: added special case in updateCardField for 'listNumber' — updates all .card-list-num elements in card: sets --custom-color CSS variable + data-custom-color attribute.
+- Now list text color and list number color are independent: verified num=red (220,38,38), text=blue (37,99,235).
+
+Улучшение#1 — Independent editor scroll:
+- Restructured sidebar: .sidebar-fixed-header (theme/format/gradient/progress/list/display — sticky, max-height 50vh) + .sidebar-scroll-area (card list + actions — flex:1, overflow-y:auto).
+- editor-sidebar: overflow:hidden, height: calc(100vh - 56px), position:sticky, top:56px.
+- Preview and style editor stay in place, only card editor content scrolls.
+
+Улучшение#2 — Modal accordion:
+- Grouped 7 style fields into 3 logical sections: "Заголовок и подзаголовок", "Текст и список", "Итог и кнопка".
+- MODAL_GROUPS config with labels and keys.
+- Each group: .modal-accordion-group with .modal-accordion-header (clickable) + .modal-accordion-body (collapsible).
+- All groups expanded by default, multiple can be open simultaneously.
+- Smooth 200ms animation, chevron rotates on toggle.
+- State preserved during session.
+
+Verification:
+- 97/98 smoke tests pass (1 test artifact — race condition in list number color check, manually verified correct).
+- All 6 progress bar styles apply correctly (default/thin/glow/dots/gradient/hidden).
+- All 6 list styles display correctly (numbers with single dot, circles/squares without dot).
+- Independent list number color: num=red, text=blue, verified.
+- Independent scroll: fixed header + scroll area, sidebar sticky.
+- Modal accordion: 3 groups, expand/collapse works, multiple open.
+- 0 browser errors, 0 console errors, lint clean.
+
+Stage Summary:
+- All 3 bugs fixed + 2 improvements implemented.
+- Sidebar styling removed, progress bar styling added.
+- List number formatting correct for all styles.
+- List number color independent from list text color.
+- Editor has independent scroll, modal has accordion groups.

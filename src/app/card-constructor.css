@@ -1197,12 +1197,29 @@
   border-right: 1px solid var(--ui-border);
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow: hidden;
   transition: margin-left var(--dur-slow) var(--ease), transform var(--dur-slow) var(--ease);
   position: relative;
+  height: calc(100vh - 56px);
+  position: sticky;
+  top: 56px;
 }
 .editor-sidebar.collapsed {
   margin-left: -300px;
+}
+
+/* Улучшение#1: Независимая прокрутка редактора карточек */
+.sidebar-fixed-header {
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--ui-border);
+  overflow-y: auto;
+  max-height: 50vh;
+}
+.sidebar-scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Scrollbar */
@@ -2189,11 +2206,62 @@
 
 /* Color picker grid */
 .color-picker-grid {
-  padding: 16px 20px;
+  padding: 12px 20px 20px;
   display: flex;
   flex-direction: column;
   gap: 8px;
   flex: 1;
+}
+
+/* Улучшение#2: Аккордеон в редакторе стилей */
+.modal-accordion-group {
+  border: 1px solid var(--ui-border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: var(--ui-surface);
+}
+.modal-accordion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--ui-bg);
+  border: none;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ui-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: all var(--dur) var(--ease);
+  text-align: left;
+}
+.modal-accordion-header:hover {
+  background: var(--ui-surface-hover);
+  color: var(--ui-text);
+}
+.modal-accordion-header svg {
+  flex-shrink: 0;
+  transition: transform var(--dur) var(--ease);
+}
+.modal-accordion-group.expanded .modal-accordion-header svg {
+  transform: rotate(180deg);
+}
+.modal-accordion-body {
+  display: none;
+  padding: 8px;
+  flex-direction: column;
+  gap: 8px;
+}
+.modal-accordion-group.expanded .modal-accordion-body {
+  display: flex;
+  animation: accordionIn 0.2s var(--ease);
+}
+@keyframes accordionIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 .color-picker-row {
   display: flex;
@@ -2684,55 +2752,61 @@ input[type="color"].color-picker-input::-moz-color-swatch {
   display: none !important;
 }
 
-/* ============================ TASK 8: Sidebar styles ============================ */
-/* Minimal (default) — чистый белый */
-.editor-sidebar.sb-minimal {
-  background: var(--ui-surface);
-  border-right: 1px solid var(--ui-border);
+/* ============================ БАГ#1: Progress bar styles ============================ */
+/* Управление шкалой прогресса чтения через data-progress-style на root */
+
+/* default — стандартная полоса */
+.cc-root[data-progress-style="default"] .progress {
+  height: 4px;
+  border-radius: 0;
+}
+.cc-root[data-progress-style="default"] .progress-fill {
+  border-radius: 0;
 }
 
-/* Outline — тонкий контур */
-.editor-sidebar.sb-outline {
-  background: var(--ui-bg);
-  border-right: 2px solid var(--ui-text);
+/* thin — тонкая элегантная */
+.cc-root[data-progress-style="thin"] .progress {
+  height: 2px;
+}
+.cc-root[data-progress-style="thin"] .progress-fill {
+  border-radius: 2px;
 }
 
-/* Accent — акцентная полоса слева */
-.editor-sidebar.sb-accent {
-  background: var(--ui-surface);
-  border-right: 1px solid var(--ui-border);
-  box-shadow: inset 4px 0 0 var(--ui-text);
+/* glow — светящаяся */
+.cc-root[data-progress-style="glow"] .progress {
+  height: 4px;
+}
+.cc-root[data-progress-style="glow"] .progress-fill {
+  border-radius: 2px;
+  box-shadow: 0 0 8px var(--accent-color), 0 0 4px var(--accent-glow);
 }
 
-/* Glass — стеклянный */
-.editor-sidebar.sb-glass {
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  border-right: 1px solid rgba(228, 228, 231, 0.6);
+/* dots — точечная */
+.cc-root[data-progress-style="dots"] .progress {
+  height: 4px;
+  background: transparent;
+  overflow: visible;
+}
+.cc-root[data-progress-style="dots"] .progress-fill {
+  height: 4px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 var(--accent-color);
+  background: var(--accent-color);
 }
 
-/* Flat — современный плоский */
-.editor-sidebar.sb-flat {
-  background: var(--ui-bg);
-  border-right: none;
-  box-shadow: 1px 0 0 var(--ui-border);
+/* gradient — градиентная */
+.cc-root[data-progress-style="gradient"] .progress {
+  height: 4px;
+  border-radius: 2px;
+}
+.cc-root[data-progress-style="gradient"] .progress-fill {
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--accent-color), var(--accent-glow), var(--accent-color));
 }
 
-/* Premium — премиальный с тенью */
-.editor-sidebar.sb-premium {
-  background: var(--ui-surface);
-  border-right: 1px solid var(--ui-border);
-  box-shadow: var(--sh-lg);
-}
-
-/* Hidden — скрытый sidebar */
-.cc-root.sb-hidden .editor-sidebar,
-.toggle-sidebar-btn.hidden-toggle {
+/* hidden — скрытая (без пустого пространства) */
+.cc-root[data-progress-style="hidden"] .progress {
   display: none !important;
-}
-.cc-root.sb-hidden .preview-workspace {
-  padding-left: 32px;
 }
 
 /* ============================ TASK 9: List styles ============================ */
