@@ -329,3 +329,36 @@ Stage Summary:
 - Re-rendering issue fixed: typing now uses O(1) targeted updates instead of O(n) full rebuild.
 - Performance instrumentation + error traps added for all render paths.
 - 54/54 tests pass.
+
+---
+Task ID: 11
+Agent: main
+Task: Eliminate renderPreview() on first char input and on text clearing — full O(1) path for empty↔content transitions.
+
+Work Log:
+- Root cause: updatePreviewField fell back to full renderPreview() when element didn't exist (empty→content) or value was empty (content→empty), because conditional rendering requires DOM add/remove.
+- Added FIELD_CONFIG: maps each field to {tag, className, container(top/bottom), order} for correct element creation and insertion position.
+- Rewrote updatePreviewField with 4 explicit cases:
+  1. value + element exists → update innerHTML in-place (O(1))
+  2. value + element missing → createFieldElement() + insert at correct position (O(1))
+  3. empty + element exists → el.remove() + updateEmptyHint (O(1))
+  4. empty + element missing → no-op
+- Added createFieldElement(): creates DOM element with correct tag/className/data-attrs/section styles, finds insertion position by scanning FIELD_CONFIG order, inserts before next existing sibling or appends to container.
+- No more renderPreview() calls during typing/clearing — all edge cases handled by targeted DOM operations.
+
+Verification (Agent Browser):
+- First char in empty title field → element created via updatePreviewField, NO renderPreview. ✓
+- Typing more chars → in-place innerHTML update. ✓
+- Clearing all text → element removed via el.remove(), empty hint appears. ✓
+- Restoring text → element recreated at correct position. ✓
+- All 6 fields tested (title, subtitle, text, footer, cta, listItems): create/update/delete/create cycle works.
+- Element order preserved: title → subtitle → text → list (top), footer → cta (bottom).
+- Mid-list insertion: removing subtitle then restoring → subtitle reappears between title and text. ✓
+- Perf: renderPreview 8 calls (structural only: init/add/delete/undo/theme/modal), updatePreviewField 27 calls avg 0.0ms.
+- 60/60 smoke tests pass (added 6 new edge-case tests for empty↔content transitions and element ordering).
+- 0 browser errors, 0 console errors, lint clean.
+
+Stage Summary:
+- Re-rendering completely eliminated for all text editing operations.
+- empty→content (first char) and content→empty (clearing) now use O(1) targeted DOM ops.
+- 60/60 tests pass.

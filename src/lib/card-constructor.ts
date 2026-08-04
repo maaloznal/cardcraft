@@ -763,9 +763,26 @@ export function initCardConstructor(root: HTMLElement): () => void {
     });
   }
 
+  /* ---------- Конфигурация полей для точечного создания/удаления ---------- */
+  // Порядок полей внутри каждого контейнера — для корректной вставки
+  const FIELD_CONFIG: Record<string, {
+    tag: string;
+    cls: string;
+    container: 'top' | 'bottom';
+    order: number;
+  }> = {
+    title: { tag: 'h2', cls: 'card-title', container: 'top', order: 0 },
+    subtitle: { tag: 'p', cls: 'card-subtitle', container: 'top', order: 1 },
+    text: { tag: 'p', cls: 'card-text', container: 'top', order: 2 },
+    list: { tag: 'ul', cls: 'card-list', container: 'top', order: 3 },
+    footer: { tag: 'div', cls: 'card-footer-text', container: 'bottom', order: 0 },
+    cta: { tag: 'div', cls: 'accent-btn', container: 'bottom', order: 1 },
+  };
+
   /* ---------- Точечное обновление поля превью (без полной перестройки) ---------- */
   // Оптимизация: при вводе текста обновляем только конкретный элемент,
   // а не перестраиваем весь cardsArea. O(1) вместо O(n) на каждое нажатие.
+  // Поддерживает: обновление in-place, создание (empty→content), удаление (content→empty).
   function updatePreviewField(cardIndex: number, field: string): void {
     const end = perfMark('updatePreviewField');
     try {
@@ -782,7 +799,7 @@ export function initCardConstructor(root: HTMLElement): () => void {
 
       const value = (card[field as keyof Card] as string) || '';
 
-      // listItems — перестраиваем только секцию списка
+      // listItems → list: специальная обработка (несколько <li>)
       if (field === 'listItems') {
         updatePreviewList(cardNode, card, cardIndex);
         updateEmptyHint(cardNode, card);
@@ -791,20 +808,101 @@ export function initCardConstructor(root: HTMLElement): () => void {
 
       const el = cardNode.querySelector<HTMLElement>(`[data-field="${field}"]`);
 
-      // Общий случай: элемент существует и есть контент — обновляем in-place
+      // Случай 1: есть контент, элемент существует → обновляем in-place
       if (value && el) {
         const styled = applyWordStylesToText(value, card.wordStyles, field);
         el.innerHTML = field === 'subtitle' || field === 'text' ? styled.replace(/\n/g, '<br>') : styled;
+        updateEmptyHint(cardNode, card);
         return;
       }
 
-      // Edge case: элемент не существует или контент пуст → полная перестройка
-      renderPreview();
+      // Случай 2: есть контент, элемент НЕ существует → создаём и вставляем
+      if (value && !el) {
+        createFieldElement(cardNode, card, cardIndex, field, value);
+        updateEmptyHint(cardNode, card);
+        return;
+      }
+
+      // Случай 3: контент пуст, элемент существует → удаляем
+      if (!value && el) {
+        el.remove();
+        updateEmptyHint(cardNode, card);
+        return;
+      }
+
+      // Случай 4: контент пуст, элемент не существует → ничего не делаем
     } catch (err) {
       console.error('[Cardcraft] Error in updatePreviewField:', err);
       renderPreview();
     } finally {
       end();
+    }
+  }
+
+  /* ---------- Создание элемента поля и вставка в правильную позицию ---------- */
+  function createFieldElement(
+    cardNode: HTMLElement,
+    card: Card,
+    cardIndex: number,
+    field: string,
+    value: string,
+  ): void {
+    const cfg = FIELD_CONFIG[field];
+    if (!cfg) {
+      // Неизвестное поле — fallback на полную перестройку
+      renderPreview();
+      return;
+    }
+
+    const containerSel = cfg.container === 'top' ? '.card-top-content' : '.card-bottom-content';
+    const container = cardNode.querySelector<HTMLElement>(containerSel);
+    if (!container) {
+      renderPreview();
+      return;
+    }
+
+    // Создаём элемент
+    const el = document.createElement(cfg.tag);
+    el.className = cfg.cls;
+    el.setAttribute('data-field', field);
+    el.setAttribute('data-index', String(cardIndex));
+
+    // Применяем стили секции
+    const styleStr = buildSectionStyle(card, field);
+    if (styleStr) el.setAttribute('style', styleStr.replace('style="', '').replace(/"$/, ''));
+
+    // Контент
+    const styled = applyWordStylesToText(value, card.wordStyles, field);
+    el.innerHTML = field === 'subtitle' || field === 'text' ? styled.replace(/\n/g, '<br>') : styled;
+
+    // Находим позицию для вставки: перед следующим существующим полем
+    const fieldsInOrder = Object.keys(FIELD_CONFIG)
+      .filter((k) => FIELD_CONFIG[k].container === cfg.container)
+      .sort((a, b) => FIELD_CONFIG[a].order - FIELD_CONFIG[b].order);
+
+    const myOrder = cfg.order;
+    let insertBefore: HTMLElement | null = null;
+    for (const f of fieldsInOrder) {
+      if (FIELD_CONFIG[f].order > myOrder) {
+        const nextEl = container.querySelector<HTMLElement>(`[data-field="${f}"]`);
+        // Для list — специальный случай (data-field="list" на .card-list-text, не на ul)
+        if (f === 'list') {
+          const listEl = container.querySelector<HTMLElement>('.card-list');
+          if (listEl) {
+            insertBefore = listEl;
+            break;
+          }
+        } else if (nextEl) {
+          insertBefore = nextEl;
+          break;
+        }
+      }
+    }
+
+    if (insertBefore) {
+      container.insertBefore(el, insertBefore);
+    } else {
+      container.appendChild(el);
     }
   }
 

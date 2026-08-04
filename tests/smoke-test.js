@@ -190,17 +190,32 @@
       assert('Фокус в поле ввода сохранён', document.activeElement === titleInput2);
     }
 
-    // 17. Edge case: очистка поля (content→empty)
+    // 17. Edge case: очистка поля (content→empty) — точечное удаление, без renderPreview
     if (titleInput2) {
       titleInput2.value = '';
       titleInput2.dispatchEvent(new Event('input', { bubbles: true }));
-      // Должен сработать полный рендер (элемент удалён)
-      // Проверяем что карточка всё ещё рендерится
-      assert('Карточка рендерится после очистки', qa('.card').length >= 1);
-      // Восстановим заголовок
+      // Элемент должен быть удалён точечно (без renderPreview)
+      assert('Заголовок удалён из превью', !q('.card-title'));
+      assert('Карточка осталась', qa('.card').length >= 1);
+      // Появился плейсхолдер пустой карточки
+      assert('Плейсхолдер появился', !!q('.card-empty-hint'));
+      // Восстановим заголовок — точечное создание
       titleInput2.value = 'Восстановлен';
       titleInput2.dispatchEvent(new Event('input', { bubbles: true }));
       assert('Заголовок восстановлен', q('.card-title')?.textContent === 'Восстановлен');
+      assert('Плейсхолдер исчез', !q('.card-empty-hint'));
+    }
+
+    // 17b. Edge case: первая буква в пустом поле (empty→content) — точечное создание
+    var subtitleInput = qa('textarea[data-field="subtitle"]')[0];
+    if (subtitleInput) {
+      assert('Подзаголовка нет изначально', !q('.card-subtitle'));
+      subtitleInput.value = 'А';
+      subtitleInput.dispatchEvent(new Event('input', { bubbles: true }));
+      assert('Подзаголовок создан с 1 буквой', q('.card-subtitle')?.textContent === 'А');
+      // Порядок: title, subtitle, text (если есть)
+      var topClasses = Array.from(q('.card-top-content').children).map(function(c){return c.className;});
+      assert('Подзаголовок после заголовка', topClasses.indexOf('card-subtitle') > topClasses.indexOf('card-title'));
     }
 
     // 18. listItems — точечное обновление списка
