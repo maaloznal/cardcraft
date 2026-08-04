@@ -645,18 +645,47 @@ export function initCardConstructor(root: HTMLElement): () => void {
       const block = document.createElement('div');
       block.className = 'card-editor-block';
 
-      // Опции тем для индивидуальной темы карточки (фикс #28)
-      const themeOptionsHtml = THEME_GROUPS.map(
-        (g) =>
-          `<optgroup label="${escapeHtml(g.label)}">${g.themes
-            .map(
-              (t) =>
-                `<option value="${t.value}"${card.theme === t.value ? ' selected' : ''}>${escapeHtml(
-                  t.label,
-                )}</option>`,
-            )
-            .join('')}</optgroup>`,
-      ).join('');
+      // Аккордеон-dropdown для индивидуальной темы карточки (как в общих стилях)
+      // card.theme === undefined или 'default' → «По умолчанию» (используется глобальная тема)
+      const cardThemeValue = card.theme && card.theme !== 'default' ? card.theme : 'default';
+      let cardThemeLabel = 'По умолчанию';
+      if (card.theme && card.theme !== 'default') {
+        for (const g of THEME_GROUPS) {
+          for (const t of g.themes) {
+            if (t.value === cardThemeValue) {
+              cardThemeLabel = t.label;
+              break;
+            }
+          }
+        }
+      }
+      const cardThemeDropdownHtml = `
+        <div class="theme-dropdown card-theme-dropdown" data-card-index="${index}">
+          <button class="theme-dropdown-trigger card-theme-trigger" data-action="card-theme-trigger" data-index="${index}" type="button">
+            <span class="theme-dropdown-label card-theme-label">${escapeHtml(cardThemeLabel)}</span>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="theme-dropdown-panel card-theme-panel">
+            <button class="theme-item card-theme-item${cardThemeValue === 'default' ? ' selected' : ''}" data-action="card-theme-select" data-index="${index}" data-value="default" data-label="По умолчанию" type="button">По умолчанию</button>
+            ${THEME_GROUPS.map(
+              (g) => `
+            <div class="theme-group" data-card-index="${index}">
+              <button class="theme-group-header card-theme-group-header" data-action="card-theme-group" data-index="${index}" type="button">
+                <span>${escapeHtml(g.label)}</span>
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div class="theme-group-items">
+                ${g.themes
+                  .map(
+                    (t) =>
+                      `<button class="theme-item card-theme-item${cardThemeValue === t.value ? ' selected' : ''}" data-action="card-theme-select" data-index="${index}" data-value="${t.value}" data-label="${escapeHtml(t.label)}" type="button">${escapeHtml(t.label)}</button>`,
+                  )
+                  .join('')}
+              </div>
+            </div>`,
+            ).join('')}
+          </div>
+        </div>`;
 
       block.innerHTML = `
         <div class="card-editor-header">
@@ -674,10 +703,7 @@ export function initCardConstructor(root: HTMLElement): () => void {
         </button>
         <div class="form-group">
           <label>Тема карточки</label>
-          <select data-action="card-theme" data-index="${index}">
-            <option value="default"${!card.theme || card.theme === 'default' ? ' selected' : ''}>По умолчанию</option>
-            ${themeOptionsHtml}
-          </select>
+          ${cardThemeDropdownHtml}
         </div>
         ${EDITOR_FIELDS.map(
           (f) => `
@@ -750,17 +776,51 @@ export function initCardConstructor(root: HTMLElement): () => void {
         btn.addEventListener('click', function () {
           moveCard(Number(this.dataset.index), Number(this.dataset.dir));
         });
-      } else if (action === 'card-theme') {
-        btn.addEventListener('change', function () {
+      } else if (action === 'card-theme-trigger') {
+        // Открытие/закрытие dropdown темы карточки
+        btn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          const dropdown = this.closest('.theme-dropdown');
+          if (!dropdown) return;
+          // Закрываем все другие открытые dropdown'ы
+          editorCardsList?.querySelectorAll('.theme-dropdown.open').forEach((d) => {
+            if (d !== dropdown) d.classList.remove('open');
+          });
+          dropdown.classList.toggle('open');
+        });
+      } else if (action === 'card-theme-group') {
+        // Раскрытие/сворачивание группы тем
+        btn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          const group = this.closest('.theme-group');
+          group?.classList.toggle('expanded');
+        });
+      } else if (action === 'card-theme-select') {
+        // Выбор темы для карточки
+        btn.addEventListener('click', function (e) {
+          e.stopPropagation();
           const idx = Number(this.dataset.index);
-          const val = (this as HTMLSelectElement).value;
+          const val = this.dataset.value || 'default';
+          const label = this.dataset.label || '';
           cards[idx].theme = val === 'default' ? undefined : val;
+          // Обновляем label триггера
+          const dropdown = this.closest('.theme-dropdown');
+          const labelEl = dropdown?.querySelector<HTMLElement>('.card-theme-label');
+          if (labelEl) labelEl.textContent = label;
+          // Обновляем выделение
+          dropdown?.querySelectorAll('.card-theme-item').forEach((item) => {
+            item.classList.toggle('selected', item === this);
+          });
+          // Закрываем dropdown
+          dropdown?.classList.remove('open');
           renderPreview();
           pushHistory();
           scheduleSave({ silent: true });
         });
       }
     });
+
+    // Закрытие dropdown'ов темы карточки при клике вне обрабатывается в document click handler
   }
 
   /* ---------- Конфигурация полей для точечного создания/удаления ---------- */
@@ -1937,6 +1997,10 @@ export function initCardConstructor(root: HTMLElement): () => void {
         themeDropdown.classList.remove('open');
         themeDropdownTrigger?.setAttribute('aria-expanded', 'false');
       }
+      // Закрытие per-card dropdown'ов тем при клике вне
+      editorCardsList?.querySelectorAll('.theme-dropdown.open').forEach((d) => {
+        if (!d.contains(t)) d.classList.remove('open');
+      });
 
       if (!wordStylePopup?.classList.contains('active')) return;
       if (wordStylePopup.contains(t)) return;
@@ -1953,7 +2017,11 @@ export function initCardConstructor(root: HTMLElement): () => void {
     // Escape
     addDoc('keydown', (e) => {
       if (e.key === 'Escape') {
-        if (themeDropdown?.classList.contains('open')) {
+        // Закрываем per-card dropdown'ы тем
+        const openCardDropdowns = editorCardsList?.querySelectorAll('.theme-dropdown.open');
+        if (openCardDropdowns && openCardDropdowns.length > 0) {
+          openCardDropdowns.forEach((d) => d.classList.remove('open'));
+        } else if (themeDropdown?.classList.contains('open')) {
           themeDropdown.classList.remove('open');
           themeDropdownTrigger?.setAttribute('aria-expanded', 'false');
         } else if (wordStylePopup?.classList.contains('active')) {

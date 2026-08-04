@@ -192,18 +192,20 @@
 
     // 17. Edge case: очистка поля (content→empty) — точечное удаление, без renderPreview
     if (titleInput2) {
+      var cardIdx = Number(titleInput2.dataset.index);
+      var firstCardNode = qa('.card')[cardIdx];
       titleInput2.value = '';
       titleInput2.dispatchEvent(new Event('input', { bubbles: true }));
-      // Элемент должен быть удалён точечно (без renderPreview)
-      assert('Заголовок удалён из превью', !q('.card-title'));
+      // Элемент должен быть удалён точечно (без renderPreview) в конкретной карточке
+      assert('Заголовок удалён из превью', !firstCardNode.querySelector('.card-title'));
       assert('Карточка осталась', qa('.card').length >= 1);
       // Появился плейсхолдер пустой карточки
-      assert('Плейсхолдер появился', !!q('.card-empty-hint'));
+      assert('Плейсхолдер появился', !!firstCardNode.querySelector('.card-empty-hint'));
       // Восстановим заголовок — точечное создание
       titleInput2.value = 'Восстановлен';
       titleInput2.dispatchEvent(new Event('input', { bubbles: true }));
-      assert('Заголовок восстановлен', q('.card-title')?.textContent === 'Восстановлен');
-      assert('Плейсхолдер исчез', !q('.card-empty-hint'));
+      assert('Заголовок восстановлен', firstCardNode.querySelector('.card-title')?.textContent === 'Восстановлен');
+      assert('Плейсхолдер исчез', !firstCardNode.querySelector('.card-empty-hint'));
     }
 
     // 17b. Edge case: первая буква в пустом поле (empty→content) — точечное создание

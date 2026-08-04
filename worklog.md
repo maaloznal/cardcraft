@@ -362,3 +362,35 @@ Stage Summary:
 - Re-rendering completely eliminated for all text editing operations.
 - empty→content (first char) and content→empty (clearing) now use O(1) targeted DOM ops.
 - 60/60 tests pass.
+
+---
+Task ID: 12
+Agent: main
+Task: Replace per-card native <select> with accordion dropdown (matching global theme selector).
+
+Work Log:
+- Replaced old native <select data-action="card-theme"> with custom accordion dropdown in renderEditor.
+- Generated cardThemeDropdownHtml: trigger button showing current theme label + collapsible panel with 5 groups + "По умолчанию" option + all 68 themes.
+- Fixed label logic: card.theme === undefined or 'default' → "По умолчанию" (uses global theme); specific theme → its label.
+- Added 3 action handlers in renderEditor:
+  - card-theme-trigger: toggles dropdown open/close, closes all other open card dropdowns first.
+  - card-theme-group: expands/collapses group.
+  - card-theme-select: sets card.theme, updates trigger label, highlights selected, closes dropdown, renderPreview + pushHistory.
+- Added card dropdown close on: outside click (document handler), Escape key (before global theme dropdown).
+- Only one card dropdown open at a time (opening second closes first).
+
+Verification (Agent Browser):
+- Old native select removed (0 found).
+- Per-card dropdown present with 5 groups, all collapsed by default.
+- Label shows "По умолчанию" for cards without theme.
+- Selecting "49. Aurora" → label updates to "49. Aurora", card gets grad-aurora theme with gradient background.
+- Resetting to "По умолчанию" → label updates, theme removed.
+- Close on outside click ✓, Escape ✓.
+- Multiple cards: only one dropdown open at a time ✓.
+- 60/60 smoke tests pass (fixed hint assertions to check specific card, not global).
+- 0 browser errors, 0 console errors, lint clean.
+
+Stage Summary:
+- Per-card theme selector now uses the same accordion dropdown format as the global theme selector.
+- Consistent UX: both selectors show collapsible groups, 68 themes + "По умолчанию" option for per-card.
+- Zero regressions, 60/60 tests pass.
