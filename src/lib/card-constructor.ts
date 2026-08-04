@@ -581,28 +581,28 @@ export function initCardConstructor(root: HTMLElement): () => void {
         <div class="card-editor-header">
           <h3>Карточка ${index + 1}</h3>
           <div class="card-editor-actions">
-            <button class="btn-icon btn-palette" data-action="palette" data-index="${index}" title="Настройка стилей">🎨 Стили</button>
-            <button class="btn-icon" data-action="duplicate" data-index="${index}" title="Дублировать карточку">⧉</button>
-            <button class="btn-icon" data-action="move" data-index="${index}" data-dir="-1" title="Переместить выше" ${index === 0 ? 'disabled style="opacity:0.4;cursor:not-allowed"' : ''}>↑</button>
-            <button class="btn-icon" data-action="move" data-index="${index}" data-dir="1" title="Переместить ниже" ${index === cards.length - 1 ? 'disabled style="opacity:0.4;cursor:not-allowed"' : ''}>↓</button>
-            ${cards.length > 1 ? `<button class="btn-delete" data-action="delete" data-index="${index}" title="Удалить карточку">Удалить</button>` : ''}
+            <button class="btn-icon btn-palette" data-action="palette" data-index="${index}" title="Настройка стилей">Стили</button>
+            <button class="btn-icon" data-action="duplicate" data-index="${index}" title="Дублировать">⧉</button>
+            <button class="btn-icon" data-action="move" data-index="${index}" data-dir="-1" title="Выше" ${index === 0 ? 'disabled' : ''}>↑</button>
+            <button class="btn-icon" data-action="move" data-index="${index}" data-dir="1" title="Ниже" ${index === cards.length - 1 ? 'disabled' : ''}>↓</button>
+            ${cards.length > 1 ? `<button class="btn-delete" data-action="delete" data-index="${index}" title="Удалить">✕</button>` : ''}
           </div>
         </div>
         <div class="form-group">
-          <label>Индивидуальная тема:</label>
+          <label>Тема карточки</label>
           <select data-action="card-theme" data-index="${index}">
-            <option value="default"${!card.theme || card.theme === 'default' ? ' selected' : ''}>— По умолчанию (глобальная) —</option>
+            <option value="default"${!card.theme || card.theme === 'default' ? ' selected' : ''}>По умолчанию</option>
             ${themeOptionsHtml}
           </select>
         </div>
         ${EDITOR_FIELDS.map(
           (f) => `
           <div class="form-group">
-            <label>${f.label}:</label>
+            <label>${f.label}</label>
             ${
               f.multiline
-                ? `<textarea data-field="${f.key}" data-index="${index}" maxlength="${f.maxlength}" placeholder="${f.label}...">${escapeHtml(card[f.key])}</textarea>`
-                : `<input type="text" data-field="${f.key}" data-index="${index}" maxlength="${f.maxlength}" placeholder="${f.label}..." value="${escapeHtml(card[f.key])}">`
+                ? `<textarea data-field="${f.key}" data-index="${index}" maxlength="${f.maxlength}" placeholder="${f.label}…">${escapeHtml(card[f.key])}</textarea>`
+                : `<input type="text" data-field="${f.key}" data-index="${index}" maxlength="${f.maxlength}" placeholder="${f.label}…" value="${escapeHtml(card[f.key])}">`
             }
           </div>`,
         ).join('')}
@@ -801,8 +801,8 @@ export function initCardConstructor(root: HTMLElement): () => void {
           </div>
         </div>
         <div class="card-actions">
-          <button class="btn-card-action" data-action="download" data-card-id="card-node-${card.id}" data-filename="card-${index + 1}.png">⬇ Скачать PNG</button>
-          <button class="btn-card-action" data-action="copy" data-card-id="card-node-${card.id}">📋 Копировать</button>
+          <button class="btn-card-action" data-action="download" data-card-id="card-node-${card.id}" data-filename="card-${index + 1}.png">Скачать PNG</button>
+          <button class="btn-card-action" data-action="copy" data-card-id="card-node-${card.id}">Копировать</button>
         </div>
       `;
       cardsArea.appendChild(wrapper);
@@ -1670,8 +1670,12 @@ export function initCardConstructor(root: HTMLElement): () => void {
   history = [snapshot()];
   histIndex = 0;
   updateUndoRedoButtons();
-  // Сайдбар скрыт при загрузке (как в оригинале)
-  setSidebarOpen(false);
+  // Сайдбар открыт на desktop, скрыт на mobile (как в Linear/Vercel)
+  if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+    setSidebarOpen(true);
+  } else {
+    setSidebarOpen(false);
+  }
 
   // Возврат функции очистки (для React Strict Mode в dev)
   return () => {

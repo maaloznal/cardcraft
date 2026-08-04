@@ -5,9 +5,9 @@ import { initCardConstructor, THEME_GROUPS } from '@/lib/card-constructor';
 import './card-constructor.css';
 
 const FORMATS = [
-  { value: 'auto', label: 'Стандартный (Компактный)' },
-  { value: 'aspect-4-5', label: 'Instagram / Telegram (4:5)' },
-  { value: 'aspect-9-16', label: 'Stories / Reels (9:16)' },
+  { value: 'auto', label: 'Стандартный' },
+  { value: 'aspect-4-5', label: '4:5 Instagram' },
+  { value: 'aspect-9-16', label: '9:16 Stories' },
 ];
 
 const FORMAT_BTNS = [
@@ -32,6 +32,15 @@ const PRESETS = [
   '#ea580c', '#dc2626', '#ec4899', '#7c3aed',
 ];
 
+function PanelIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <line x1="9" y1="3" x2="9" y2="21" />
+    </svg>
+  );
+}
+
 export default function Home() {
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -42,13 +51,38 @@ export default function Home() {
 
   return (
     <div className="cc-root" ref={rootRef}>
-      <div className="app-layout">
-        {/* ================= Сайдбар ================= */}
-        <aside className="editor-sidebar collapsed" id="editorSidebar">
-          <h1 className="editor-title">✨ Дизайн Карточек</h1>
+      {/* ================= TOP BAR ================= */}
+      <header className="top-bar">
+        <div className="top-bar-left">
+          <button
+            className="sidebar-toggle"
+            id="toggleSidebarBtn"
+            aria-label="Показать/скрыть редактор"
+            title="Редактор"
+            type="button"
+          >
+            <PanelIcon />
+          </button>
+          <div className="brand">
+            <span className="brand-name">Cardcraft</span>
+            <span className="card-count-badge" id="cardCountBadge" aria-live="polite">
+              1 карточка
+            </span>
+          </div>
+        </div>
+        <div className="top-bar-right">
+          <button className="btn-primary" id="saveAll" aria-label="Скачать все карточки как PNG" title="Скачать все PNG">
+            Скачать все
+          </button>
+        </div>
+      </header>
 
-          <div className="form-group">
-            <label htmlFor="themeSelect">🎨 Стиль предпросмотра (48 тем):</label>
+      {/* ================= APP LAYOUT ================= */}
+      <div className="app-layout">
+        {/* Sidebar */}
+        <aside className="editor-sidebar collapsed" id="editorSidebar">
+          <div className="sidebar-section">
+            <label className="sidebar-label" htmlFor="themeSelect">Тема оформления</label>
             <select id="themeSelect" defaultValue="default">
               {THEME_GROUPS.map((g) => (
                 <optgroup key={g.label} label={g.label}>
@@ -62,8 +96,8 @@ export default function Home() {
             </select>
           </div>
 
-          <div className="form-group">
-            <label htmlFor="formatSelect">📐 Формат / Соотношение сторон:</label>
+          <div className="sidebar-section">
+            <label className="sidebar-label" htmlFor="formatSelect">Формат</label>
             <select id="formatSelect" defaultValue="auto">
               {FORMATS.map((f) => (
                 <option key={f.value} value={f.value}>
@@ -73,29 +107,26 @@ export default function Home() {
             </select>
           </div>
 
-          <hr />
+          <div id="editorCardsList" />
 
-          <div
-            id="editorCardsList"
-            style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
-          />
-
-          <button className="btn-add" id="addCardBtn" aria-label="Добавить новую карточку">
-            + Добавить карточку
-          </button>
+          <div className="sidebar-section" style={{ borderBottom: 'none', paddingTop: 0 }}>
+            <button className="btn-add" id="addCardBtn" aria-label="Добавить новую карточку">
+              + Добавить карточку
+            </button>
+          </div>
 
           <div className="sidebar-extra-actions">
-            <button className="btn-secondary" id="undoBtn" title="Отменить (Ctrl+Z)">
+            <button className="btn-secondary" id="undoBtn" title="Отменить (Ctrl+Z)" type="button">
               ↶ Отменить
             </button>
-            <button className="btn-secondary" id="redoBtn" title="Повторить (Ctrl+Y)">
+            <button className="btn-secondary" id="redoBtn" title="Повторить (Ctrl+Y)" type="button">
               ↷ Повторить
             </button>
-            <button className="btn-secondary" id="exportJsonBtn" title="Сохранить в файл">
-              ⬆ Экспорт
+            <button className="btn-secondary" id="exportJsonBtn" title="Сохранить в файл" type="button">
+              ↥ Экспорт
             </button>
-            <button className="btn-secondary" id="importJsonBtn" title="Загрузить из файла">
-              ⬇ Импорт
+            <button className="btn-secondary" id="importJsonBtn" title="Загрузить из файла" type="button">
+              ↧ Импорт
             </button>
             <input
               type="file"
@@ -105,61 +136,32 @@ export default function Home() {
             />
           </div>
 
-          <button className="btn-primary" id="saveChangesBtn" style={{ marginTop: 12 }} title="Сохранить (Ctrl+S)">
-            💾 Сохранить изменения
+          <button className="btn-primary" id="saveChangesBtn" title="Сохранить (Ctrl+S)" type="button">
+            Сохранить
           </button>
         </aside>
 
         <div className="sidebar-backdrop" id="sidebarBackdrop" />
 
-        <button
-          className="toggle-sidebar-btn"
-          id="toggleSidebarBtn"
-          aria-label="Показать/скрыть панель редактора"
-          title="Показать/скрыть панель"
-        >
-          ☰
-        </button>
-
-        {/* ================= Превью ================= */}
+        {/* Workspace */}
         <main className="preview-workspace" id="previewWorkspace">
-          <div className="workspace-header">
-            <div className="workspace-title-group">
-              <h2
-                style={{
-                  margin: 0,
-                  fontSize: 18,
-                  color: 'var(--text-secondary)',
-                  fontWeight: 500,
-                }}
-              >
-                Предпросмотр карточек
-              </h2>
-              <span className="card-count-badge" id="cardCountBadge" aria-live="polite">
-                1 карточка
-              </span>
-            </div>
-            <button className="btn-primary" id="saveAll" aria-label="Скачать все карточки как PNG">
-              Скачать все PNG
-            </button>
-          </div>
           <div className="cards-container" id="cardsArea" />
         </main>
       </div>
 
-      {/* ================= Модалка палитры ================= */}
+      {/* ================= MODAL PALETTE ================= */}
       <div className="modal-overlay" id="colorModal" role="dialog" aria-modal="true">
         <div className="modal-card">
           <div className="modal-header">
-            <h3 id="modalCardTitle">🎨 Настройка стилей карточки</h3>
-            <button className="modal-close" id="closeModalBtn" aria-label="Закрыть">
+            <h3 id="modalCardTitle">Стили карточки</h3>
+            <button className="modal-close" id="closeModalBtn" aria-label="Закрыть" type="button">
               ×
             </button>
           </div>
 
           <div className="palette-presets-section">
             <div className="palette-presets-title">
-              Быстрые цвета для: <span className="active-target" id="presetTargetLabel">Заголовок</span>
+              Быстрые цвета: <span id="presetTargetLabel">Заголовок</span>
             </div>
             <div className="palette-swatches">
               {PRESETS.map((c) => (
@@ -194,6 +196,7 @@ export default function Home() {
                     data-reset={row.key}
                     title="Сбросить цвет"
                     aria-label={`Сбросить цвет: ${row.label}`}
+                    type="button"
                   >
                     ✕
                   </button>
@@ -234,17 +237,17 @@ export default function Home() {
           </div>
 
           <div className="modal-footer">
-            <button className="btn-secondary" id="resetCardColorsBtn">
+            <button className="btn-secondary" id="resetCardColorsBtn" type="button">
               Сбросить всё
             </button>
-            <button className="btn-primary" id="applyColorsBtn" style={{ padding: '8px 20px' }}>
+            <button className="btn-primary" id="applyColorsBtn" type="button">
               Готово
             </button>
           </div>
         </div>
       </div>
 
-      {/* ================= Попап настройки слова ================= */}
+      {/* ================= WORD STYLE POPUP ================= */}
       <div className="word-style-popup" id="wordStylePopup" role="dialog" aria-label="Настройка слова">
         <div className="word-popup-header" id="wordPopupHeader" />
         <button
@@ -253,11 +256,11 @@ export default function Home() {
           type="button"
           title="Убрать все стили с этого слова"
         >
-          ✕ Сбросить стиль слова
+          Сбросить стиль слова
         </button>
         <div className="popup-section">
           <div className="popup-section-title">
-            <span>ТЕКСТ</span>
+            <span>Текст</span>
           </div>
           <div className="popup-section-content">
             <div className="text-format-controls">
@@ -281,7 +284,7 @@ export default function Home() {
         </div>
         <div className="popup-section">
           <div className="popup-section-title">
-            <span>ЦВЕТ</span>
+            <span>Цвет</span>
           </div>
           <div className="popup-section-content">
             <div className="color-presets">
@@ -299,7 +302,7 @@ export default function Home() {
         </div>
         <div className="popup-section">
           <div className="popup-section-title">
-            <span>СТИЛИ СЛОВ</span>
+            <span>Стили слов</span>
           </div>
           <div className="popup-section-content">
             <div id="wordStyleList" className="word-style-list" />
