@@ -209,21 +209,6 @@ function deepClone<T>(v: T): T {
 
 const isWordChar = (c: string) => /[\p{L}\p{N}_]/u.test(c);
 
-// Получение выделенного слова в input/textarea (фикс #1).
-// Не манипулирует DOM — только возвращает текст выделения/слова под курсором.
-function getSelectedWord(el: HTMLInputElement | HTMLTextAreaElement): string {
-  const s = el.selectionStart ?? 0;
-  const e = el.selectionEnd ?? 0;
-  let word = el.value.substring(s, e).trim();
-  if (word) return word;
-  const val = el.value;
-  let start = s;
-  let end = e;
-  while (start > 0 && isWordChar(val[start - 1])) start--;
-  while (end < val.length && isWordChar(val[end])) end++;
-  return val.substring(start, end).trim();
-}
-
 /* ============================ ГЛАВНАЯ ФУНКЦИЯ ============================ */
 export function initCardConstructor(root: HTMLElement): () => void {
   /* ---------- Ловушки ошибок (console error traps) ---------- */
@@ -646,18 +631,6 @@ export function initCardConstructor(root: HTMLElement): () => void {
           renderPreview();
           scheduleSave({ silent: true });
           scheduleHistoryPush();
-        });
-
-        // фикс #1: двойной клик в поле ввода — выделяем слово без манипуляций DOM
-        el.addEventListener('dblclick', function (e) {
-          const text = getSelectedWord(this);
-          const field = this.dataset.field || '';
-          const cardIndex = Number(this.dataset.index);
-          if (text.length > 0) {
-            const rect = (this as HTMLElement).getBoundingClientRect();
-            openWordStylePopup(rect.left, rect.top + 24, text, field, cardIndex);
-          }
-          e.stopPropagation();
         });
 
         // Жёсткая очистка при вставке

@@ -123,7 +123,15 @@
     ts.dispatchEvent(new Event('change', { bubbles: true }));
     assert('Тема применяется к workspace', q('#previewWorkspace').getAttribute('data-theme') === 'obsidian-gold');
 
-    // 13. Стилизация слов
+    // 13. Стилизация слов — ТОЛЬКО в превью, не в полях ввода редактора
+    // 13a. Сначала убедимся, что dblclick в поле ввода редактора НЕ открывает попап
+    var editorInput = qa('input[data-field="title"]')[0] || qa('textarea[data-field="title"]')[0];
+    if (editorInput) {
+      editorInput.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    }
+    assert('Dblclick в поле редактора НЕ открывает попап', !q('#wordStylePopup').classList.contains('active'));
+
+    // 13b. Dblclick в превью — открывает попап
     var titleEl = q('.card-title');
     if (titleEl) {
       var tn = titleEl.firstChild;
@@ -139,7 +147,7 @@
         titleEl.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
       }
     }
-    assert('Попап слова открывается', q('#wordStylePopup').classList.contains('active'));
+    assert('Попап слова открывается из превью', q('#wordStylePopup').classList.contains('active'));
     assert('Заголовок попапа показывает слово', !!q('#wordPopupHeader')?.textContent.trim());
 
     // Применить жирный

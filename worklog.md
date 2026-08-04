@@ -235,3 +235,28 @@ Verification:
 Stage Summary:
 - All reported bugs fixed: button overflow, emoji in modal, button overlap with title.
 - Bonus: fixed undo/redo logic, added error traps, created 44-test smoke suite (100% pass).
+
+---
+Task ID: 8
+Agent: main
+Task: Remove per-word styling from editor input fields (keep only in preview section).
+
+Work Log:
+- Identified two dblclick handlers: (1) on editor input/textarea fields (sidebar), (2) on preview text elements (card-title, card-text, etc.).
+- Removed dblclick handler from editor fields (was lines 651-661): no longer opens word style popup when double-clicking text in title/subtitle/text/list/footer/cta input fields.
+- Removed now-dead getSelectedWord() function (was only used by the removed handler).
+- Preserved isWordChar() — still used by containsWholeWord() and applyWordStylesToText() for orphan cleanup and word matching.
+- Kept dblclick handler on preview [data-field] elements — word styling still works by double-clicking words in the rendered card preview.
+- Added smoke test assertions: "Dblclick в поле редактора НЕ открывает попап" (verifies removal) and "Попап слова открывается из превью" (verifies preservation).
+
+Verification (Agent Browser, 45/45 tests pass):
+- Dblclick on editor input field → popup does NOT open ✓
+- Dblclick on preview card-title → popup opens with "Заголовок: простота" ✓
+- Word styling (bold/color) still applies from preview ✓
+- Clear word style button still works ✓
+- All other flows unaffected: add/delete/duplicate/undo, modal, theme switch, export/import, PNG download.
+- Browser errors: 0. Console: 0 errors. Lint: 0 errors. Dev log: clean.
+
+Stage Summary:
+- Per-word editing removed from editor inputs; preserved in preview only.
+- No regressions — all 45 smoke tests pass.
