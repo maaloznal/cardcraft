@@ -138,6 +138,21 @@ export default function Home() {
             </select>
           </div>
 
+          <div className="sidebar-section gradient-control-section">
+            <label className="sidebar-label" htmlFor="gradientAngleSlider">
+              Угол градиента
+              <span className="gradient-angle-value" id="gradientAngleValue">135°</span>
+            </label>
+            <input
+              type="range"
+              id="gradientAngleSlider"
+              min={0}
+              max={360}
+              defaultValue={135}
+              className="gradient-angle-slider"
+            />
+          </div>
+
           <div id="editorCardsList" />
 
           <div className="sidebar-section" style={{ borderBottom: 'none', paddingTop: 0 }}>

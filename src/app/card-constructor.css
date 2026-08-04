@@ -742,7 +742,7 @@
 
 /* ================= ГРАДИЕНТНЫЕ ТЕМЫ (49–68) ================= */
 [data-theme="grad-aurora"] {
-  --card-bg: linear-gradient(135deg, #4158d0 0%, #c850c0 50%, #ffcc70 100%);
+  --card-bg: linear-gradient(var(--gradient-angle, 135deg), #4158d0 0%, #c850c0 50%, #ffcc70 100%);
   --card-border: rgba(255,255,255,0.12);
   --card-shadow: 0 20px 50px -12px rgba(65,88,208,0.45);
   --text-primary: #ffffff;
@@ -757,7 +757,7 @@
   --cta-text-color: #1a1030;
 }
 [data-theme="grad-sunset-glow"] {
-  --card-bg: linear-gradient(135deg, #ff9a8b 0%, #ff6a88 55%, #ff99ac 100%);
+  --card-bg: linear-gradient(var(--gradient-angle, 135deg), #ff9a8b 0%, #ff6a88 55%, #ff99ac 100%);
   --card-border: rgba(255,106,136,0.25);
   --card-shadow: 0 16px 40px -10px rgba(255,106,136,0.4);
   --text-primary: #4a0e2e;
@@ -772,7 +772,7 @@
   --cta-text-color: #4a0e2e;
 }
 [data-theme="grad-ocean-depth"] {
-  --card-bg: linear-gradient(160deg, #0093e9 0%, #80d0c7 100%);
+  --card-bg: linear-gradient(var(--gradient-angle, 135deg), #0093e9 0%, #80d0c7 100%);
   --card-border: rgba(0,147,233,0.2);
   --card-shadow: 0 20px 45px -12px rgba(0,147,233,0.4);
   --text-primary: #ffffff;
@@ -787,7 +787,7 @@
   --cta-text-color: #ffffff;
 }
 [data-theme="grad-peach-sorbet"] {
-  --card-bg: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+  --card-bg: linear-gradient(var(--gradient-angle, 135deg), #ffecd2 0%, #fcb69f 100%);
   --card-border: rgba(252,182,159,0.35);
   --card-shadow: 0 14px 35px -10px rgba(252,182,159,0.4);
   --text-primary: #6b2d17;
@@ -802,7 +802,7 @@
   --cta-text-color: #6b2d17;
 }
 [data-theme="grad-mint-lagoon"] {
-  --card-bg: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  --card-bg: linear-gradient(var(--gradient-angle, 135deg), #43e97b 0%, #38f9d7 100%);
   --card-border: rgba(67,233,123,0.25);
   --card-shadow: 0 16px 40px -10px rgba(67,233,123,0.35);
   --text-primary: #0a3d2a;
@@ -817,7 +817,7 @@
   --cta-text-color: #0a3d2a;
 }
 [data-theme="grad-lavender-mist"] {
-  --card-bg: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
+  --card-bg: linear-gradient(var(--gradient-angle, 135deg), #a18cd1 0%, #fbc2eb 100%);
   --card-border: rgba(161,140,209,0.25);
   --card-shadow: 0 16px 40px -10px rgba(161,140,209,0.35);
   --text-primary: #3d1d6b;
@@ -832,7 +832,7 @@
   --cta-text-color: #3d1d6b;
 }
 [data-theme="grad-golden-sand"] {
-  --card-bg: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+  --card-bg: linear-gradient(var(--gradient-angle, 135deg), #f6d365 0%, #fda085 100%);
   --card-border: rgba(253,160,133,0.3);
   --card-shadow: 0 14px 35px -10px rgba(253,160,133,0.35);
   --text-primary: #5c2e0a;
@@ -847,7 +847,7 @@
   --cta-text-color: #5c2e0a;
 }
 [data-theme="grad-rose-gold"] {
-  --card-bg: linear-gradient(135deg, #ffe0e9 0%, #ffc4cf 40%, #ffb88c 100%);
+  --card-bg: linear-gradient(var(--gradient-angle, 135deg), #ffe0e9 0%, #ffc4cf 40%, #ffb88c 100%);
   --card-border: rgba(255,180,140,0.3);
   --card-shadow: 0 14px 35px -10px rgba(255,180,140,0.3);
   --text-primary: #5c1a2b;
@@ -862,7 +862,7 @@
   --cta-text-color: #5c1a2b;
 }
 [data-theme="grad-midnight-sky"] {
-  --card-bg: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+  --card-bg: linear-gradient(var(--gradient-angle, 135deg), #0f0c29 0%, #302b63 50%, #24243e 100%);
   --card-border: rgba(48,43,99,0.4);
   --card-shadow: 0 20px 50px -12px rgba(0,0,0,0.6);
   --text-primary: #ffffff;
@@ -877,7 +877,7 @@
   --cta-text-color: #ffffff;
 }
 [data-theme="grad-coral-blaze"] {
-  --card-bg: linear-gradient(135deg, #ff512f 0%, #dd2476 100%);
+  --card-bg: linear-gradient(var(--gradient-angle, 135deg), #ff512f 0%, #dd2476 100%);
   --card-border: rgba(221,36,118,0.3);
   --card-shadow: 0 18px 45px -12px rgba(221,36,118,0.4);
   --text-primary: #ffffff;
@@ -892,7 +892,7 @@
   --cta-text-color: #2d0a1a;
 }
 [data-theme="grad-forest-mist"] {
-  --card-bg: linear-gradient(135deg, #134e5e 0%, #71b280 100%);
+  --card-bg: linear-gradient(var(--gradient-angle, 135deg), #134e5e 0%, #71b280 100%);
   --card-border: rgba(113,178,128,0.25);
   --card-shadow: 0 18px 45px -12px rgba(19,78,94,0.4);
   --text-primary: #ffffff;
@@ -907,7 +907,7 @@
   --cta-text-color: #0a2620;
 }
 [data-theme="grad-berry-smoothie"] {
-  --card-bg: linear-gradient(135deg, #c33149 0%, #6e0d25 100%);
+  --card-bg: linear-gradient(var(--gradient-angle, 135deg), #c33149 0%, #6e0d25 100%);
   --card-border: rgba(110,13,37,0.4);
   --card-shadow: 0 20px 50px -12px rgba(110,13,37,0.5);
   --text-primary: #ffffff;
@@ -922,7 +922,7 @@
   --cta-text-color: #ffffff;
 }
 [data-theme="grad-desert-dawn"] {
-  --card-bg: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  --card-bg: linear-gradient(var(--gradient-angle, 135deg), #f5f7fa 0%, #c3cfe2 100%);
   --card-border: rgba(195,207,226,0.35);
   --card-shadow: 0 14px 35px -10px rgba(195,207,226,0.4);
   --text-primary: #2d3748;
@@ -937,7 +937,7 @@
   --cta-text-color: #2d3748;
 }
 [data-theme="grad-glacier"] {
-  --card-bg: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+  --card-bg: linear-gradient(var(--gradient-angle, 135deg), #e0eafc 0%, #cfdef3 100%);
   --card-border: rgba(207,222,243,0.4);
   --card-shadow: 0 14px 35px -10px rgba(207,222,243,0.45);
   --text-primary: #1a365d;
@@ -952,7 +952,7 @@
   --cta-text-color: #1a365d;
 }
 [data-theme="grad-volcanic"] {
-  --card-bg: linear-gradient(135deg, #434343 0%, #1a1a1a 60%, #0d0d0d 100%);
+  --card-bg: linear-gradient(var(--gradient-angle, 135deg), #434343 0%, #1a1a1a 60%, #0d0d0d 100%);
   --card-border: rgba(255,87,34,0.2);
   --card-shadow: 0 20px 50px -12px rgba(0,0,0,0.7);
   --text-primary: #ffffff;
@@ -967,7 +967,7 @@
   --cta-text-color: #ffffff;
 }
 [data-theme="grad-cotton-sky"] {
-  --card-bg: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 50%, #fbc2eb 100%);
+  --card-bg: linear-gradient(var(--gradient-angle, 135deg), #a1c4fd 0%, #c2e9fb 50%, #fbc2eb 100%);
   --card-border: rgba(161,196,253,0.25);
   --card-shadow: 0 16px 40px -10px rgba(161,196,253,0.35);
   --text-primary: #1e3a5f;
@@ -982,7 +982,7 @@
   --cta-text-color: #1e3a5f;
 }
 [data-theme="grad-emerald-night"] {
-  --card-bg: linear-gradient(135deg, #022c22 0%, #064e3b 50%, #065f46 100%);
+  --card-bg: linear-gradient(var(--gradient-angle, 135deg), #022c22 0%, #064e3b 50%, #065f46 100%);
   --card-border: rgba(6,95,70,0.35);
   --card-shadow: 0 20px 50px -12px rgba(2,44,34,0.5);
   --text-primary: #ecfdf5;
@@ -997,7 +997,7 @@
   --cta-text-color: #ffffff;
 }
 [data-theme="grad-amber-warmth"] {
-  --card-bg: linear-gradient(135deg, #78350f 0%, #92400e 50%, #b45309 100%);
+  --card-bg: linear-gradient(var(--gradient-angle, 135deg), #78350f 0%, #92400e 50%, #b45309 100%);
   --card-border: rgba(180,83,9,0.3);
   --card-shadow: 0 20px 50px -12px rgba(120,53,15,0.45);
   --text-primary: #fffbeb;
@@ -1012,7 +1012,7 @@
   --cta-text-color: #ffffff;
 }
 [data-theme="grad-frost-berry"] {
-  --card-bg: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 50%, #f093b9 100%);
+  --card-bg: linear-gradient(var(--gradient-angle, 135deg), #e0c3fc 0%, #8ec5fc 50%, #f093b9 100%);
   --card-border: rgba(224,195,252,0.25);
   --card-shadow: 0 16px 40px -10px rgba(224,195,252,0.35);
   --text-primary: #312e81;
@@ -1027,7 +1027,7 @@
   --cta-text-color: #312e81;
 }
 [data-theme="grad-cosmic-dust"] {
-  --card-bg: linear-gradient(135deg, #2d1b4e 0%, #5b2a86 50%, #d63384 100%);
+  --card-bg: linear-gradient(var(--gradient-angle, 135deg), #2d1b4e 0%, #5b2a86 50%, #d63384 100%);
   --card-border: rgba(214,51,132,0.2);
   --card-shadow: 0 20px 50px -12px rgba(45,27,78,0.55);
   --text-primary: #ffffff;
@@ -1229,13 +1229,64 @@
   border-bottom: none;
 }
 .sidebar-label {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--ui-text-tertiary);
   margin-bottom: 8px;
+}
+
+/* Gradient angle control */
+.gradient-control-section .gradient-angle-value {
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--ui-text);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 700;
+  background: var(--ui-bg);
+  padding: 1px 6px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--ui-border);
+}
+.gradient-angle-slider {
+  width: 100%;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: linear-gradient(90deg, var(--ui-border) 0%, var(--ui-accent) 100%);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+.gradient-angle-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: var(--ui-text);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform var(--dur) var(--ease-spring);
+  border: 2px solid var(--ui-surface);
+  box-shadow: var(--sh-sm);
+}
+.gradient-angle-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+.gradient-angle-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: var(--ui-text);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid var(--ui-surface);
+  box-shadow: var(--sh-sm);
 }
 
 /* Поля ввода */
@@ -1479,12 +1530,35 @@
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
+  flex: 1;
 }
 .card-editor-actions {
   display: flex;
   gap: 4px;
   align-items: center;
   flex-shrink: 0;
+}
+
+/* Collapse toggle */
+.card-collapse-toggle svg {
+  transition: transform var(--dur) var(--ease);
+}
+
+/* Collapsible body */
+.card-editor-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+  transition: max-height var(--dur-slow) var(--ease), opacity var(--dur) var(--ease), margin var(--dur) var(--ease);
+  max-height: 2000px;
+  opacity: 1;
+}
+.card-editor-block.collapsed .card-editor-body {
+  max-height: 0;
+  opacity: 0;
+  margin-top: -10px;
+  margin-bottom: -10px;
 }
 
 /* Full-width "Стили" button below the header */
@@ -2328,7 +2402,15 @@ input[type="color"].color-picker-input::-moz-color-swatch {
   flex-wrap: wrap;
   padding-bottom: 12px;
   margin-bottom: 4px;
+  margin-top: -4px;
+  padding-top: 4px;
   border-bottom: 1px solid var(--ui-border);
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+.word-popup-header:active {
+  cursor: grabbing;
 }
 .wp-header-label {
   font-size: 10px;

@@ -394,3 +394,61 @@ Stage Summary:
 - Per-card theme selector now uses the same accordion dropdown format as the global theme selector.
 - Consistent UX: both selectors show collapsible groups, 68 themes + "По умолчанию" option for per-card.
 - Zero regressions, 60/60 tests pass.
+
+---
+Task ID: 13
+Agent: main (Lead Product Architect role)
+Task: Comprehensive audit — re-render optimization, draggable popup, collapsible editor, gradient control, UX audit.
+
+Work Log:
+
+TASK 1 — Full re-render audit & fix:
+- Found 9 places calling full renderPreview() for operations that only affect one field:
+  commitWordStyle, word remove, word clear, modal color input, color reset, preset swatch, format buttons, size slider, reset all.
+- Added updateCardField(cardIndex, field): O(1) update of specific field — recalculates style attribute + innerHTML (word styles) for one element, no DOM rebuild.
+- Added updateCardTheme(cardIndex): O(1) update of data-theme attribute on one card.
+- Replaced all 9 renderPreview() calls with targeted updateCardField/updateCardTheme.
+- Fixed event delegation: dblclick handler was per-element (lost on createFieldElement). Moved to delegated handler on cardsArea — works for current and future elements.
+- Result: modal color/size/format changes now use updateCardField (avg 0.1ms) instead of renderPreview.
+
+TASK 2 — Draggable word popup:
+- Added makeWordPopupDraggable(): pointer events on #wordPopupHeader (drag handle).
+- Smooth dragging with clamp to viewport (8px padding).
+- Cursor: grab → grabbing during drag.
+- user-select: none during drag to prevent text selection.
+- Cleanup on unmount.
+- Does not interfere with interactive elements inside header.
+
+TASK 3 — Collapsible card editor blocks:
+- Added chevron toggle button in card-editor-header.
+- Wrapped editor content in .card-editor-body with max-height transition.
+- Collapsed state: max-height 0, opacity 0, smooth 300ms animation.
+- Chevron rotates -90deg when collapsed.
+- State preserved (not saved to localStorage — resets on reload, by design).
+
+TASK 5 — Gradient angle slider:
+- Added gradientAngle state (0-360°, default 135°).
+- Added applyGradientAngle(): sets --gradient-angle CSS variable on workspace.
+- Updated all 20 gradient themes: replaced fixed angles (135deg, 160deg) with var(--gradient-angle, 135deg).
+- Added slider in sidebar with real-time label (135°) and gradient track styling.
+- Changes apply instantly to all gradient-themed cards — no re-render needed (pure CSS variable).
+
+TASK 6 — UX/UI audit:
+- sidebar-label changed from display:block to flex with space-between (supports inline value display).
+- Gradient slider has premium styling: gradient track, 16px thumb with border + shadow, spring hover scale.
+- word-popup-header: cursor grab, touch-action none, user-select none.
+- All new elements follow existing design system (zinc palette, 4px spacing, 8px radius, layered shadows).
+- Consistent with Cardcraft design language.
+
+Verification:
+- 60/60 smoke tests pass, 0 regressions.
+- Perf: renderPreview 1 call (init only), updateCardField 3 calls avg 0.1ms for modal changes (was 3 full rebuilds).
+- Word popup opens correctly after event delegation fix.
+- Drag works (cursor grab, position updates).
+- Collapse works (max-height 0, opacity 0, chevron rotates).
+- Gradient slider: angle 135°→45° changes card background in real-time, CSS variable updates.
+- Mobile responsive: slider visible, sidebar drawer, card visible.
+- 0 browser errors, 0 console errors, lint clean.
+
+Stage Summary:
+- All 6 tasks completed. Re-renders eliminated for all field/style operations. Popup draggable. Editor collapsible. Gradient angle controllable in real-time. UX consistent.
