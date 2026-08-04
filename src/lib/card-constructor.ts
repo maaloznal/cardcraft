@@ -296,6 +296,9 @@ export function initCardConstructor(root: HTMLElement): () => void {
   const themeDropdownLabel = $<HTMLElement>('#themeDropdownLabel');
   const gradientAngleSlider = $<HTMLInputElement>('#gradientAngleSlider');
   const gradientAngleValue = $<HTMLElement>('#gradientAngleValue');
+  const numberingToggle = $<HTMLInputElement>('#numberingToggle');
+  const sidebarStyleSelect = $<HTMLSelectElement>('#sidebarStyleSelect');
+  const listStyleSelect = $<HTMLSelectElement>('#listStyleSelect');
   const previewWorkspace = $<HTMLElement>('#previewWorkspace');
   const toast = $<HTMLElement>('#toast');
 
@@ -326,6 +329,9 @@ export function initCardConstructor(root: HTMLElement): () => void {
   let currentTheme = 'default';
   let currentFormat = 'auto';
   let gradientAngle = 135; // угол градиента для градиентных тем (0-360)
+  let showCardNumbers = true; // Task 7: отображение нумерации карточек
+  let sidebarStyle = 'minimal'; // Task 8: стиль sidebar (minimal/outline/accent/glass/flat/premium/hidden)
+  let listStyleType = 'numbers'; // Task 9: стиль списков (numbers/bullets/dashes/circles/squares/decorative)
   let activeCardIndexForColors: number | null = null;
   let lastActiveField = 'title';
 
@@ -412,6 +418,10 @@ export function initCardConstructor(root: HTMLElement): () => void {
         localStorage.setItem('flashcard-cards', dataStr);
         localStorage.setItem('flashcard-theme', currentTheme);
         localStorage.setItem('flashcard-format', currentFormat);
+        localStorage.setItem('flashcard-show-numbers', String(showCardNumbers));
+        localStorage.setItem('flashcard-sidebar-style', sidebarStyle);
+        localStorage.setItem('flashcard-list-style', listStyleType);
+        localStorage.setItem('flashcard-gradient-angle', String(gradientAngle));
         if (!silent) showToast('Карточки успешно сохранены!');
       } catch (quotaError) {
         const err = quotaError as Error;
@@ -433,6 +443,10 @@ export function initCardConstructor(root: HTMLElement): () => void {
     const savedCards = localStorage.getItem('flashcard-cards');
     const savedTheme = localStorage.getItem('flashcard-theme');
     const savedFormat = localStorage.getItem('flashcard-format');
+    const savedShowNumbers = localStorage.getItem('flashcard-show-numbers');
+    const savedSidebarStyle = localStorage.getItem('flashcard-sidebar-style');
+    const savedListStyle = localStorage.getItem('flashcard-list-style');
+    const savedGradientAngle = localStorage.getItem('flashcard-gradient-angle');
     if (savedCards) {
       try {
         const parsed = JSON.parse(savedCards) as Card[];
@@ -454,7 +468,27 @@ export function initCardConstructor(root: HTMLElement): () => void {
       currentFormat = savedFormat;
       if (formatSelect) formatSelect.value = savedFormat;
     }
+    if (savedShowNumbers !== null) {
+      showCardNumbers = savedShowNumbers === 'true';
+      if (numberingToggle) numberingToggle.checked = showCardNumbers;
+    }
+    if (savedSidebarStyle) {
+      sidebarStyle = savedSidebarStyle;
+      if (sidebarStyleSelect) sidebarStyleSelect.value = savedSidebarStyle;
+    }
+    if (savedListStyle) {
+      listStyleType = savedListStyle;
+      if (listStyleSelect) listStyleSelect.value = savedListStyle;
+    }
+    if (savedGradientAngle) {
+      gradientAngle = Number(savedGradientAngle) || 135;
+      if (gradientAngleSlider) gradientAngleSlider.value = String(gradientAngle);
+      if (gradientAngleValue) gradientAngleValue.textContent = `${gradientAngle}°`;
+    }
     applyThemeToWorkspace();
+    applyNumberingVisibility();
+    applyListStyle();
+    applySidebarStyle();
   }
 
   function migrateCard(card: Partial<Card>): Card {
@@ -628,6 +662,40 @@ export function initCardConstructor(root: HTMLElement): () => void {
     previewWorkspace.style.setProperty('--gradient-angle', `${gradientAngle}deg`);
   }
 
+  /* ---------- Task 7: Применение отображения нумерации карточек ---------- */
+  function applyNumberingVisibility(): void {
+    if (!root) return;
+    root.classList.toggle('no-card-numbers', !showCardNumbers);
+  }
+
+  /* ---------- Task 8: Применение стиля sidebar ---------- */
+  function applySidebarStyle(): void {
+    if (!editorSidebar || !root) return;
+    // Удаляем все предыдущие классы стилей
+    const styleClasses = ['sb-minimal', 'sb-outline', 'sb-accent', 'sb-glass', 'sb-flat', 'sb-premium'];
+    styleClasses.forEach((cls) => editorSidebar!.classList.remove(cls));
+    if (sidebarStyle === 'hidden') {
+      setSidebarOpen(false);
+      // Скрываем toggle кнопку тоже
+      toggleSidebarBtn?.classList.add('hidden-toggle');
+      root.classList.add('sb-hidden');
+    } else {
+      toggleSidebarBtn?.classList.remove('hidden-toggle');
+      root.classList.remove('sb-hidden');
+      editorSidebar.classList.add(`sb-${sidebarStyle}`);
+      // На desktop открываем sidebar автоматически при выборе видимого стиля
+      if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+        setSidebarOpen(true);
+      }
+    }
+  }
+
+  /* ---------- Task 9: Применение стиля списков ---------- */
+  function applyListStyle(): void {
+    if (!root) return;
+    root.setAttribute('data-list-style', listStyleType);
+  }
+
   /* ---------- Синхронизация кастомного dropdown темы ---------- */
   function syncThemeDropdown(): void {
     if (!themeDropdownLabel || !themeDropdown) return;
@@ -699,12 +767,17 @@ export function initCardConstructor(root: HTMLElement): () => void {
           </div>
         </div>`;
 
+      const cardTitlePreview = card.title ? escapeHtml(card.title.length > 32 ? card.title.slice(0, 31) + '…' : card.title) : 'Без названия';
+
       block.innerHTML = `
         <div class="card-editor-header">
           <button class="btn-icon card-collapse-toggle" data-action="collapse" data-index="${index}" title="Свернуть/развернуть" aria-label="Свернуть" type="button">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
-          <h3>Карточка ${index + 1}</h3>
+          <div class="card-editor-title-group">
+            <span class="card-editor-num-badge">${index + 1}</span>
+            <h3 title="${escapeHtml(card.title || 'Без названия')}">${cardTitlePreview}</h3>
+          </div>
           <div class="card-editor-actions">
             <button class="btn-icon" data-action="duplicate" data-index="${index}" title="Дублировать" aria-label="Дублировать"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
             <button class="btn-icon" data-action="move" data-index="${index}" data-dir="-1" title="Переместить выше" aria-label="Выше" ${index === 0 ? 'disabled' : ''}><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
@@ -749,6 +822,16 @@ export function initCardConstructor(root: HTMLElement): () => void {
           pruneOrphanWordStyles(cards[idx]);
           // Оптимизация: точечное обновление вместо полной перестройки
           updatePreviewField(idx, field as string);
+          // Task 10: обновляем preview названия карточки в header при вводе title
+          if (field === 'title') {
+            const block = this.closest('.card-editor-block');
+            const h3 = block?.querySelector<HTMLElement>('.card-editor-title-group h3');
+            if (h3) {
+              const val = this.value || 'Без названия';
+              h3.textContent = val.length > 32 ? val.slice(0, 31) + '…' : val;
+              h3.setAttribute('title', this.value || 'Без названия');
+            }
+          }
           scheduleSave({ silent: true });
           scheduleHistoryPush();
         });
@@ -1864,6 +1947,27 @@ export function initCardConstructor(root: HTMLElement): () => void {
       gradientAngle = Number(this.value);
       if (gradientAngleValue) gradientAngleValue.textContent = `${gradientAngle}°`;
       applyGradientAngle();
+    });
+
+    // Task 7: Переключатель нумерации карточек
+    numberingToggle?.addEventListener('change', function () {
+      showCardNumbers = this.checked;
+      applyNumberingVisibility();
+      scheduleSave({ silent: true });
+    });
+
+    // Task 8: Выбор стиля sidebar
+    sidebarStyleSelect?.addEventListener('change', function () {
+      sidebarStyle = this.value;
+      applySidebarStyle();
+      scheduleSave({ silent: true });
+    });
+
+    // Task 9: Выбор стиля списков
+    listStyleSelect?.addEventListener('change', function () {
+      listStyleType = this.value;
+      applyListStyle();
+      scheduleSave({ silent: true });
     });
 
     // Кастомный аккордеон-dropdown темы: открытие/закрытие

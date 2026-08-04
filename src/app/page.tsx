@@ -153,6 +153,46 @@ export default function Home() {
             />
           </div>
 
+          <div className="sidebar-section">
+            <label className="sidebar-label" htmlFor="sidebarStyleSelect">
+              Стиль панели
+            </label>
+            <select id="sidebarStyleSelect" defaultValue="minimal">
+              <option value="minimal">Минималистичный</option>
+              <option value="outline">Тонкий контур</option>
+              <option value="accent">Акцентный</option>
+              <option value="glass">Стеклянный</option>
+              <option value="flat">Современный плоский</option>
+              <option value="premium">Премиальный</option>
+              <option value="hidden">Скрыть</option>
+            </select>
+          </div>
+
+          <div className="sidebar-section">
+            <label className="sidebar-label" htmlFor="listStyleSelect">
+              Стиль списков
+            </label>
+            <select id="listStyleSelect" defaultValue="numbers">
+              <option value="numbers">Классическая нумерация</option>
+              <option value="bullets">Маркеры</option>
+              <option value="dashes">Тире</option>
+              <option value="circles">Цифры в круге</option>
+              <option value="squares">Цифры в квадрате</option>
+              <option value="decorative">Декоративные маркеры</option>
+            </select>
+          </div>
+
+          <div className="sidebar-section display-options-section">
+            <label className="sidebar-label">Отображение</label>
+            <div className="toggle-row">
+              <span className="toggle-label">Нумерация карточек</span>
+              <label className="switch">
+                <input type="checkbox" id="numberingToggle" defaultChecked />
+                <span className="switch-slider" />
+              </label>
+            </div>
+          </div>
+
           <div id="editorCardsList" />
 
           <div className="sidebar-section" style={{ borderBottom: 'none', paddingTop: 0 }}>

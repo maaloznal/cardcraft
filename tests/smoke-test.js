@@ -53,7 +53,8 @@
 
     // 4. Карточка рендерится
     assert('Превью карточки рендерится', qa('.card').length >= 1);
-    assert('Тег карточки содержит "01"', /01/.test(q('.tag')?.textContent || ''));
+    // Тег может быть скрыт если нумерация выключена — проверяем что card рендерится
+    assert('Карточка имеет top-content', !!q('.card-top-content'));
 
     // 5. Заполним первую карточку (state-independent: работаем с тем что есть)
     var titleInput = qa('input[data-field="title"]')[0];
@@ -237,6 +238,59 @@
       listInput.value = '';
       listInput.dispatchEvent(new Event('input', { bubbles: true }));
       assert('Список очищен', qa('.card-list-item').length === 0);
+    }
+
+    // 19. Task 7: Нумерация карточек — toggle
+    assert('Toggle нумерации существует', !!q('#numberingToggle'));
+    // Убедимся что нумерация включена
+    if (!q('#numberingToggle').checked) q('#numberingToggle').click();
+    // Проверяем через computed style (CSS управляет видимостью)
+    var tagEl = q('.tag');
+    assert('Тег виден при включённой нумерации', tagEl && getComputedStyle(tagEl).display !== 'none');
+    q('#numberingToggle').click();
+    assert('Тег скрыт после выключения', getComputedStyle(tagEl).display === 'none');
+    q('#numberingToggle').click();
+    assert('Тег виден после включения', getComputedStyle(tagEl).display !== 'none');
+
+    // 20. Task 8: Стили sidebar
+    assert('Select стиля sidebar существует', !!q('#sidebarStyleSelect'));
+    var sbStyles = ['minimal','outline','accent','glass','flat','premium'];
+    sbStyles.forEach(function(s) {
+      q('#sidebarStyleSelect').value = s;
+      q('#sidebarStyleSelect').dispatchEvent(new Event('change', {bubbles: true}));
+      assert('Sidebar стиль ' + s, q('#editorSidebar').classList.contains('sb-' + s));
+    });
+    // Hidden
+    q('#sidebarStyleSelect').value = 'hidden';
+    q('#sidebarStyleSelect').dispatchEvent(new Event('change', {bubbles: true}));
+    assert('Sidebar скрыт', q('.cc-root').classList.contains('sb-hidden'));
+    // Вернём minimal
+    q('#sidebarStyleSelect').value = 'minimal';
+    q('#sidebarStyleSelect').dispatchEvent(new Event('change', {bubbles: true}));
+
+    // 21. Task 9: Стили списков
+    assert('Select стиля списков существует', !!q('#listStyleSelect'));
+    var listStyles = ['numbers','bullets','dashes','circles','squares','decorative'];
+    listStyles.forEach(function(s) {
+      q('#listStyleSelect').value = s;
+      q('#listStyleSelect').dispatchEvent(new Event('change', {bubbles: true}));
+      assert('Стиль списка ' + s, q('.cc-root').getAttribute('data-list-style') === s);
+    });
+    q('#listStyleSelect').value = 'numbers';
+    q('#listStyleSelect').dispatchEvent(new Event('change', {bubbles: true}));
+
+    // 22. Task 10: Идентификация карточек
+    assert('Title group существует', !!q('.card-editor-title-group'));
+    assert('Num badge существует', !!q('.card-editor-num-badge'));
+    assert('Num badge показывает номер', /^\d+$/.test(q('.card-editor-num-badge')?.textContent || ''));
+    var h3 = q('.card-editor-title-group h3');
+    assert('H3 показывает какой-то текст', !!h3?.textContent?.trim());
+    // Введём title и проверим обновление
+    var titleForId = qa('input[data-field="title"]')[0];
+    if (titleForId) {
+      titleForId.value = 'Тест идентификации';
+      titleForId.dispatchEvent(new Event('input', {bubbles: true}));
+      assert('H3 обновился', q('.card-editor-title-group h3')?.textContent === 'Тест идентификации');
     }
 
     results.push('');

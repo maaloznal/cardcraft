@@ -452,3 +452,66 @@ Verification:
 
 Stage Summary:
 - All 6 tasks completed. Re-renders eliminated for all field/style operations. Popup draggable. Editor collapsible. Gradient angle controllable in real-time. UX consistent.
+
+---
+Task ID: 14
+Agent: main (Lead Product Architect role)
+Task: Tasks 7-11 — card numbering toggle, sidebar styles, list styles, card identification, design audit.
+
+Work Log:
+
+TASK 7 — Card numbering toggle:
+- Added showCardNumbers state (default true).
+- Added #numberingToggle switch in sidebar "Отображение" section.
+- Tag element always rendered in DOM; CSS class .no-card-numbers .tag { display: none } controls visibility — instant toggle without re-render.
+- applyNumberingVisibility() toggles root class.
+- Persisted to localStorage.
+
+TASK 8 — Sidebar styles system (6 variants + hidden):
+- Added sidebarStyle state (minimal/outline/accent/glass/flat/premium/hidden).
+- Added #sidebarStyleSelect dropdown in sidebar.
+- 6 visual variants via CSS classes: sb-minimal (white), sb-outline (2px border), sb-accent (left accent stripe), sb-glass (backdrop-blur), sb-flat (no border), sb-premium (large shadow).
+- Hidden option: hides sidebar + toggle button, workspace auto-expands.
+- applySidebarStyle() manages classes, auto-opens on desktop when visible style selected.
+- Persisted to localStorage.
+
+TASK 9 — List styles system (6 variants):
+- Added listStyleType state (numbers/bullets/dashes/circles/squares/decorative).
+- Added #listStyleSelect dropdown in sidebar.
+- Architecture: data-list-style attribute on root + CSS pseudo-elements (::before, ::after) — instant switching without re-render.
+- 6 styles: numbers (1.), bullets (•), dashes (—), circles (number in circle), squares (number in square), decorative (◆).
+- All styles use --accent-color for markers, consistent with design system.
+- Extensible: add new style = add CSS block + option.
+- Persisted to localStorage.
+
+TASK 10 — Card identification:
+- Replaced generic "Карточка N" header with prominent title group.
+- Added .card-editor-num-badge: 22px dark badge with white number (mono font).
+- H3 shows card title preview (truncated to 32 chars) or "Без названия".
+- Title attribute for full text on hover.
+- Real-time update: typing in title input updates h3 in header instantly (no re-render).
+- User immediately sees which card they're editing by its title, not just position.
+
+TASK 11 — Design system audit:
+- All new controls use existing design tokens (zinc palette, 8px radius, layered shadows).
+- Toggle switch: premium iOS-style with spring animation.
+- Num badge: mono font, consistent with other numeric displays.
+- Sidebar styles: all use --ui-* variables, consistent spacing.
+- List styles: all use --accent-color, consistent typography.
+- New sidebar sections follow existing layout (14px padding, 11px uppercase labels).
+- No visual noise, clean hierarchy preserved.
+
+Verification:
+- 84/84 smoke tests pass (added 24 new tests for Tasks 7-10).
+- All 6 sidebar styles apply correctly with distinct visual properties.
+- All 6 list styles switch instantly via data-list-style attribute.
+- Card numbering toggle: instant show/hide via CSS class.
+- Card identification: num badge + title preview, real-time update on input.
+- Hidden sidebar: toggle button hidden, workspace expands.
+- All settings persisted to localStorage, survive reload.
+- 0 browser errors, 0 console errors, lint clean.
+
+Stage Summary:
+- 4 new feature systems implemented + design audit completed.
+- All features use existing design system, feel native to Cardcraft.
+- 84/84 tests pass, zero regressions.
