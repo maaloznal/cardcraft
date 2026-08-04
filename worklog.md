@@ -570,3 +570,35 @@ Stage Summary:
 - List number formatting correct for all styles.
 - List number color independent from list text color.
 - Editor has independent scroll, modal has accordion groups.
+
+---
+Task ID: 16
+Agent: main
+Task: БАГ#4 — fully independent list number styling (digit color, bg color, border color, size).
+
+Work Log:
+- Root cause: updateCardField (called from modal color inputs) had NO branch for listNumber/listNumBg/listNumBorder/listNumSize — only updatePreviewField had it. So changing these colors in modal did nothing.
+- Added buildListNumStyle(card) helper: generates style attribute with --num-color, --num-bg, --num-border, --num-size CSS variables from card.colors.
+- Replaced both list HTML generations (updatePreviewList + renderPreview) to use buildListNumStyle instead of old listNumberStyle/listNumberDataAttr.
+- Updated .card-list-num CSS: color: var(--num-color, var(--accent-color)) — digit color independent.
+- Updated circles/squares CSS: background: var(--num-bg, var(--accent-color)), color: var(--num-color, var(--card-bg)), border: var(--num-border, none), width/height: var(--num-size, 22px), font-size: calc(var(--num-size) * 0.5) — all independent, perfectly centered.
+- Added new fields to MODAL_FIELDS: listNumBg (Цвет фона фигуры), listNumBorder (Цвет рамки фигуры).
+- Added new MODAL_GROUP: "Нумерация списка" with listNumber, listNumBg, listNumBorder + size slider.
+- Added #listNumSizeSlider (16-40px) in modal — updates --num-size in real-time, digit auto-scales (size*0.5).
+- Added listNumSizeSlider handler in bindStatic: updates card.colors.listNumSize, calls updateCardField('listNumSize').
+- Added slider sync in openColorModal: restores saved size value.
+- Added branch in updateCardField for listNumber/listNumBg/listNumBorder/listNumSize — updates CSS variables on existing .card-list-num elements (O(1), no re-render).
+- Updated FIELD_LABELS with new field names.
+
+Verification (106/106 tests pass):
+- Independent colors verified: digit=white(255,255,255), bg=red(220,38,38), border=green(5,150,105), text=blue(37,99,235) — all different, all correct.
+- Size slider: 32px → width=32px, height=32px, font-size=16px (32*0.5) — perfect centering, no clipping.
+- Real-time updates: all changes apply instantly via CSS variables, no re-render.
+- All 6 list styles still work correctly.
+- 0 browser errors, 0 console errors, lint clean.
+
+Stage Summary:
+- БАГ#4 fully fixed: 5 independent parameters (text color, digit color, bg color, border color, size).
+- New modal group "Нумерация списка" with all controls grouped logically.
+- Size slider with auto-scaling font, perfect centering.
+- 106/106 tests pass.

@@ -153,7 +153,9 @@ const FIELD_LABELS: Record<string, string> = {
   text: 'Основной текст',
   list: 'Список',
   listItems: 'Список',
-  listNumber: 'Нумерация списка',
+  listNumber: 'Цвет цифры',
+  listNumBg: 'Цвет фона фигуры',
+  listNumBorder: 'Цвет рамки фигуры',
   footer: 'Итоговый вывод',
   cta: 'Кнопка / CTA',
 };
@@ -184,7 +186,9 @@ const MODAL_FIELDS: {
   { key: 'subtitle', label: 'Подзаголовок', defaultSize: 18, hasStyleControls: true },
   { key: 'text', label: 'Основной текст', defaultSize: 16, hasStyleControls: true },
   { key: 'list', label: 'Список', defaultSize: 16, hasStyleControls: true },
-  { key: 'listNumber', label: 'Нумерация списка', defaultSize: 16, hasStyleControls: false },
+  { key: 'listNumber', label: 'Цвет цифры', defaultSize: 16, hasStyleControls: false },
+  { key: 'listNumBg', label: 'Цвет фона фигуры', defaultSize: 16, hasStyleControls: false },
+  { key: 'listNumBorder', label: 'Цвет рамки фигуры', defaultSize: 16, hasStyleControls: false },
   { key: 'footer', label: 'Итоговый вывод', defaultSize: 14, hasStyleControls: true },
   { key: 'cta', label: 'Кнопка / CTA', defaultSize: 16, hasStyleControls: true },
 ];
@@ -299,6 +303,8 @@ export function initCardConstructor(root: HTMLElement): () => void {
   const numberingToggle = $<HTMLInputElement>('#numberingToggle');
   const progressBarStyleSelect = $<HTMLSelectElement>('#progressBarStyleSelect');
   const listStyleSelect = $<HTMLSelectElement>('#listStyleSelect');
+  const listNumSizeSlider = $<HTMLInputElement>('#listNumSizeSlider');
+  const listNumSizeValue = $<HTMLElement>('#listNumSizeValue');
   const previewWorkspace = $<HTMLElement>('#previewWorkspace');
   const toast = $<HTMLElement>('#toast');
 
@@ -961,18 +967,24 @@ export function initCardConstructor(root: HTMLElement): () => void {
         return;
       }
 
-      // БАГ#3: listNumber — обновляем цвет номеров списка (color хранится в card.colors.listNumber)
-      if (field === 'listNumber') {
-        const numColor = card.colors?.listNumber;
+      // БАГ#4: listNumber/listNumBg/listNumBorder/listNumSize — независимые параметры нумерации
+      // Обновляем CSS-переменные на существующих .card-list-num элементах
+      if (field === 'listNumber' || field === 'listNumBg' || field === 'listNumBorder' || field === 'listNumSize') {
         const nums = cardNode.querySelectorAll<HTMLElement>('.card-list-num');
+        const c = card.colors || {};
         nums.forEach((num) => {
-          if (numColor) {
-            num.style.setProperty('--custom-color', numColor);
-            num.setAttribute('data-custom-color', 'true');
-          } else {
-            num.style.removeProperty('--custom-color');
-            num.removeAttribute('data-custom-color');
-          }
+          // Цвет цифры
+          if (c.listNumber) num.style.setProperty('--num-color', c.listNumber);
+          else num.style.removeProperty('--num-color');
+          // Цвет фона фигуры
+          if (c.listNumBg) num.style.setProperty('--num-bg', c.listNumBg);
+          else num.style.removeProperty('--num-bg');
+          // Цвет рамки фигуры
+          if (c.listNumBorder) num.style.setProperty('--num-border', c.listNumBorder);
+          else num.style.removeProperty('--num-border');
+          // Размер фигуры
+          if (c.listNumSize) num.style.setProperty('--num-size', `${c.listNumSize}px`);
+          else num.style.removeProperty('--num-size');
         });
         return;
       }
@@ -1032,6 +1044,25 @@ export function initCardConstructor(root: HTMLElement): () => void {
       // Обновляем секцию списка
       if (field === 'list') {
         updatePreviewList(cardNode, card, cardIndex);
+        end();
+        return;
+      }
+
+      // БАГ#4: listNumber/listNumBg/listNumBorder/listNumSize — независимые параметры нумерации
+      // Обновляем CSS-переменные на существующих .card-list-num элементах
+      if (field === 'listNumber' || field === 'listNumBg' || field === 'listNumBorder' || field === 'listNumSize') {
+        const nums = cardNode.querySelectorAll<HTMLElement>('.card-list-num');
+        const c = card.colors || {};
+        nums.forEach((num) => {
+          if (c.listNumber) num.style.setProperty('--num-color', c.listNumber);
+          else num.style.removeProperty('--num-color');
+          if (c.listNumBg) num.style.setProperty('--num-bg', c.listNumBg);
+          else num.style.removeProperty('--num-bg');
+          if (c.listNumBorder) num.style.setProperty('--num-border', c.listNumBorder);
+          else num.style.removeProperty('--num-border');
+          if (c.listNumSize) num.style.setProperty('--num-size', `${c.listNumSize}px`);
+          else num.style.removeProperty('--num-size');
+        });
         end();
         return;
       }
@@ -1153,12 +1184,19 @@ export function initCardConstructor(root: HTMLElement): () => void {
   }
 
   // Перестройка только списка внутри карточки
+  function buildListNumStyle(card: Card): string {
+    const c = card.colors || {};
+    const vars: string[] = [];
+    if (c.listNumber) vars.push(`--num-color:${escapeHtml(c.listNumber)}`);
+    if (c.listNumBg) vars.push(`--num-bg:${escapeHtml(c.listNumBg)}`);
+    if (c.listNumBorder) vars.push(`--num-border:${escapeHtml(c.listNumBorder)}`);
+    if (c.listNumSize) vars.push(`--num-size:${escapeHtml(c.listNumSize)}px`);
+    return vars.length ? `style="${vars.join(';')}"` : '';
+  }
+
   function updatePreviewList(cardNode: HTMLElement, card: Card, cardIndex: number): void {
     const listStyle = buildSectionStyle(card, 'list');
-    const listNumberStyle = card.colors?.listNumber
-      ? `style="--custom-color:${escapeHtml(card.colors.listNumber)};"`
-      : '';
-    const listNumberDataAttr = card.colors?.listNumber ? 'data-custom-color="true"' : '';
+    const listNumStyle = buildListNumStyle(card);
 
     let listHtml = '';
     if ((card.listItems || '').trim()) {
@@ -1166,7 +1204,7 @@ export function initCardConstructor(root: HTMLElement): () => void {
       listHtml = items
         .map(
           (it, idx) => `<li class="card-list-item" ${listStyle}>
-            <span class="card-list-num" ${listNumberStyle} ${listNumberDataAttr}>${idx + 1}</span>
+            <span class="card-list-num" ${listNumStyle}>${idx + 1}</span>
             <span class="card-list-text" ${listStyle} data-field="list" data-index="${cardIndex}">${applyWordStylesToText(it, card.wordStyles, 'list')}</span>
           </li>`,
         )
@@ -1226,10 +1264,7 @@ export function initCardConstructor(root: HTMLElement): () => void {
       const subtitleStyle = buildSectionStyle(card, 'subtitle');
       const textStyle = buildSectionStyle(card, 'text');
       const listStyle = buildSectionStyle(card, 'list');
-      const listNumberStyle = card.colors?.listNumber
-        ? `style="--custom-color:${escapeHtml(card.colors.listNumber)};"`
-        : '';
-      const listNumberDataAttr = card.colors?.listNumber ? 'data-custom-color="true"' : '';
+      const listNumStyle = buildListNumStyle(card);
       const footerStyle = buildSectionStyle(card, 'footer');
       const ctaStyle = buildSectionStyle(card, 'cta');
 
@@ -1241,7 +1276,7 @@ export function initCardConstructor(root: HTMLElement): () => void {
           .map(
             (it, idx) => `
               <li class="card-list-item" ${listStyle}>
-                <span class="card-list-num" ${listNumberStyle} ${listNumberDataAttr}>${idx + 1}</span>
+                <span class="card-list-num" ${listNumStyle}>${idx + 1}</span>
                 <span class="card-list-text" ${listStyle} data-field="list" data-index="${index}">${applyWordStylesToText(
                   it,
                   card.wordStyles,
@@ -1500,6 +1535,10 @@ export function initCardConstructor(root: HTMLElement): () => void {
     });
 
     selectRowField('title');
+    // Синхронизация ползунка размера фигуры нумерации
+    const savedNumSize = cards[index].colors?.listNumSize;
+    if (listNumSizeSlider) listNumSizeSlider.value = String(savedNumSize || 22);
+    if (listNumSizeValue) listNumSizeValue.textContent = `${savedNumSize || 22}px`;
     colorModal?.classList.add('active');
     previewWorkspace?.classList.add('modal-open');
     // Фокус-менеджмент: переносим фокус в модалку
@@ -1968,6 +2007,18 @@ export function initCardConstructor(root: HTMLElement): () => void {
       listStyleType = this.value;
       applyListStyle();
       scheduleSave({ silent: true });
+    });
+
+    // БАГ#4: Ползунок размера фигуры нумерации (круг/квадрат)
+    listNumSizeSlider?.addEventListener('input', function () {
+      const size = Number(this.value);
+      if (listNumSizeValue) listNumSizeValue.textContent = `${size}px`;
+      if (activeCardIndexForColors !== null) {
+        if (!cards[activeCardIndexForColors].colors) cards[activeCardIndexForColors].colors = {};
+        cards[activeCardIndexForColors].colors.listNumSize = String(size);
+        updateCardField(activeCardIndexForColors, 'listNumSize');
+        scheduleSave({ silent: true });
+      }
     });
 
     // Кастомный аккордеон-dropdown темы: открытие/закрытие

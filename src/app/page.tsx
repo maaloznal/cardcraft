@@ -22,7 +22,9 @@ const MODAL_ROWS = [
   { key: 'subtitle', label: 'Подзаголовок', defaultSize: 18, hasStyleControls: true },
   { key: 'text', label: 'Основной текст', defaultSize: 16, hasStyleControls: true },
   { key: 'list', label: 'Список', defaultSize: 16, hasStyleControls: true },
-  { key: 'listNumber', label: 'Нумерация списка', defaultSize: 16, hasStyleControls: false },
+  { key: 'listNumber', label: 'Цвет цифры', defaultSize: 16, hasStyleControls: false },
+  { key: 'listNumBg', label: 'Цвет фона фигуры', defaultSize: 16, hasStyleControls: false },
+  { key: 'listNumBorder', label: 'Цвет рамки фигуры', defaultSize: 16, hasStyleControls: false },
   { key: 'footer', label: 'Итоговый вывод', defaultSize: 14, hasStyleControls: true },
   { key: 'cta', label: 'Кнопка / CTA', defaultSize: 16, hasStyleControls: true },
 ];
@@ -30,7 +32,8 @@ const MODAL_ROWS = [
 // Улучшение#2: Группировка полей модалки в аккордеон-разделы
 const MODAL_GROUPS = [
   { label: 'Заголовок и подзаголовок', keys: ['title', 'subtitle'] },
-  { label: 'Текст и список', keys: ['text', 'list', 'listNumber'] },
+  { label: 'Текст и список', keys: ['text', 'list'] },
+  { label: 'Нумерация списка', keys: ['listNumber', 'listNumBg', 'listNumBorder'] },
   { label: 'Итог и кнопка', keys: ['footer', 'cta'] },
 ];
 
@@ -345,6 +348,21 @@ export default function Home() {
                       </div>
                     );
                   })}
+                  {group.label === 'Нумерация списка' && (
+                    <div className="color-picker-row">
+                      <span className="color-picker-label">Размер фигуры</span>
+                      <div className="size-control-section" style={{ paddingTop: 4 }}>
+                        <input
+                          type="range"
+                          id="listNumSizeSlider"
+                          min={16}
+                          max={40}
+                          defaultValue={22}
+                        />
+                        <span id="listNumSizeValue">22px</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

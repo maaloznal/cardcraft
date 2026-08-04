@@ -347,14 +347,54 @@
 
     // 26. Улучшение#2: Аккордеон в редакторе стилей
     q('[data-action="palette"]')?.click();
-    assert('Аккордеон группы существуют', qa('.modal-accordion-group').length >= 3);
-    assert('Все группы раскрыты по умолчанию', qa('.modal-accordion-group.expanded').length === 3);
+    var groupCount = qa('.modal-accordion-group').length;
+    assert('Аккордеон группы существуют', groupCount >= 3);
+    assert('Все группы раскрыты по умолчанию', qa('.modal-accordion-group.expanded').length === groupCount);
     // Свернём первую
     q('.modal-accordion-header').click();
-    assert('Сворачивание работает', qa('.modal-accordion-group.expanded').length === 2);
+    assert('Сворачивание работает', qa('.modal-accordion-group.expanded').length === groupCount - 1);
     q('.modal-accordion-header').click();
-    assert('Разворачивание работает', qa('.modal-accordion-group.expanded').length === 3);
+    assert('Разворачивание работает', qa('.modal-accordion-group.expanded').length === groupCount);
     q('#applyColorsBtn').click();
+
+    // 27. БАГ#4: Независимые параметры нумерации (circles)
+    // Установим circles style
+    q('#listStyleSelect').value = 'circles';
+    q('#listStyleSelect').dispatchEvent(new Event('change', {bubbles: true}));
+    q('[data-action="palette"]')?.click();
+    // text=синий, digit=белый, bg=красный, border=зелёный
+    var listIn = q('#col-list');
+    var numIn = q('#col-listNumber');
+    var bgIn = q('#col-listNumBg');
+    var borderIn = q('#col-listNumBorder');
+    if (listIn && numIn && bgIn && borderIn) {
+      listIn.value = '#2563eb'; listIn.dispatchEvent(new Event('input', {bubbles: true}));
+      numIn.value = '#ffffff'; numIn.dispatchEvent(new Event('input', {bubbles: true}));
+      bgIn.value = '#dc2626'; bgIn.dispatchEvent(new Event('input', {bubbles: true}));
+      borderIn.value = '#059669'; borderIn.dispatchEvent(new Event('input', {bubbles: true}));
+      q('#applyColorsBtn').click();
+      var numEl = q('.card-list-num');
+      var textEl = q('.card-list-text');
+      assert('Цвет цифры белый', /255,\s*255,\s*255/.test(getComputedStyle(numEl).color));
+      assert('Цвет фона красный', /220,\s*38,\s*38/.test(getComputedStyle(numEl).backgroundColor));
+      assert('Цвет рамки зелёный', /5,\s*150,\s*105/.test(getComputedStyle(numEl).borderColor));
+      assert('Цвет текста синий', /37,\s*99,\s*235/.test(getComputedStyle(textEl).color));
+    }
+
+    // 28. Размер фигуры (slider)
+    q('[data-action="palette"]')?.click();
+    var sizeSlider = q('#listNumSizeSlider');
+    var sizeValue = q('#listNumSizeValue');
+    if (sizeSlider && sizeValue) {
+      sizeSlider.value = '32';
+      sizeSlider.dispatchEvent(new Event('input', {bubbles: true}));
+      q('#applyColorsBtn').click();
+      var numEl2 = q('.card-list-num');
+      assert('Размер фигуры 32px', getComputedStyle(numEl2).width === '32px');
+      assert('Высота фигуры 32px', getComputedStyle(numEl2).height === '32px');
+      assert('Размер шрифта 16px (32*0.5)', getComputedStyle(numEl2).fontSize === '16px');
+      assert('Значение slider обновлено', sizeValue.textContent === '32px');
+    }
 
     results.push('');
     results.push('=== ИТОГ: ' + passed + ' passed, ' + failed + ' failed ===');
