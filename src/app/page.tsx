@@ -82,8 +82,9 @@ export default function Home() {
         {/* Sidebar */}
         <aside className="editor-sidebar collapsed" id="editorSidebar">
           <div className="sidebar-section">
-            <label className="sidebar-label" htmlFor="themeSelect">Тема оформления</label>
-            <select id="themeSelect" defaultValue="default">
+            <label className="sidebar-label">Тема оформления</label>
+            {/* Скрытый native select для совместимости с TS логикой */}
+            <select id="themeSelect" defaultValue="default" aria-hidden="true" style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none', overflow: 'hidden' }}>
               {THEME_GROUPS.map((g) => (
                 <optgroup key={g.label} label={g.label}>
                   {g.themes.map((t) => (
@@ -94,6 +95,36 @@ export default function Home() {
                 </optgroup>
               ))}
             </select>
+            {/* Кастомный аккордеон-селектор */}
+            <div className="theme-dropdown" id="themeDropdown">
+              <button className="theme-dropdown-trigger" id="themeDropdownTrigger" type="button" aria-haspopup="listbox" aria-expanded="false">
+                <span className="theme-dropdown-label" id="themeDropdownLabel">1. Clean Minimal</span>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div className="theme-dropdown-panel" id="themeDropdownPanel" role="listbox">
+                {THEME_GROUPS.map((g, gi) => (
+                  <div className="theme-group" key={g.label} data-group-index={gi}>
+                    <button className="theme-group-header" type="button" aria-expanded="false">
+                      <span>{g.label}</span>
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div className="theme-group-items">
+                      {g.themes.map((t) => (
+                        <button
+                          className="theme-item"
+                          data-value={t.value}
+                          data-label={t.label}
+                          type="button"
+                          key={t.value}
+                        >
+                          {t.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div className="sidebar-section">

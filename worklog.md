@@ -260,3 +260,36 @@ Verification (Agent Browser, 45/45 tests pass):
 Stage Summary:
 - Per-word editing removed from editor inputs; preserved in preview only.
 - No regressions — all 45 smoke tests pass.
+
+---
+Task ID: 9
+Agent: main
+Task: Add 20 gradient themes + collapsible accordion theme selector.
+
+Work Log:
+- Added 20 unique gradient themes to CSS (grad-aurora through grad-cosmic-dust), each with linear-gradient --card-bg, proper text contrast (light text on dark gradients, dark text on light gradients), gradient-appropriate borders/shadows, semi-transparent progress bars and buttons.
+- Changed .card { background-color: var(--card-bg) } → .card { background: var(--card-bg) } to support both solid colors and gradients.
+- Added 20 gradient themes to THEME_GROUPS as new group "Градиентные (49–68)" — total now 68 themes across 5 groups.
+- Built custom accordion dropdown for theme selector: trigger button shows current theme name; panel opens with 5 collapsible group headers; clicking a group expands/collapses its theme list; clicking a theme selects it and closes dropdown.
+- Kept hidden native <select id="themeSelect"> for TS compatibility — dropdown syncs via dispatching change events, so all existing TS logic (save/load/apply) works unchanged.
+- Added syncThemeDropdown() function: updates trigger label + highlights selected item when value changes programmatically (e.g., on load from localStorage).
+- Added dropdown close on: outside click, Escape key, theme selection.
+- Added CSS: .theme-dropdown, .theme-dropdown-trigger, .theme-dropdown-panel, .theme-group, .theme-group-header (accordion), .theme-group-items, .theme-item with hover/selected states, dropdownIn animation.
+- Per-card theme select (in card editor blocks) also includes all 68 themes via THEME_GROUPS (native select with optgroups).
+
+Verification (Agent Browser):
+- Dropdown structure: 5 groups, 68 items (48 solid + 20 gradient), all groups collapsed by default (0 visible items — clean minimalist view).
+- Group expand: clicking "Градиентные" header → 20 items appear.
+- Theme select: clicking "49. Aurora" → dropdown closes, label updates to "49. Aurora", workspace gets data-theme="grad-aurora", card background = linear-gradient(135deg, rgb(65,88,208)...) ✓
+- Tested 3 gradient themes (aurora, sunset-glow, cosmic-dust) — all render gradients correctly.
+- Persistence: gradient theme saved to localStorage, survives reload.
+- Per-card theme: 20 gradient options available, grad-volcanic applied to individual card with gradient background.
+- PNG export: gradient card exports successfully ("Карточка успешно скачана!"), no console errors.
+- Dropdown close: outside click ✓, Escape key ✓.
+- Smoke test: 45/45 pass, 0 regressions.
+- Browser errors: 0. Console: 0 errors. Lint: 0 errors. Dev log: clean.
+
+Stage Summary:
+- 20 gradient themes added (total 68 themes).
+- Accordion dropdown replaces overwhelming 68-item select — groups expand on demand for clean minimalist UX.
+- Zero regressions, all existing flows intact.

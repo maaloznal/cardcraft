@@ -112,6 +112,31 @@ export const THEME_GROUPS: { label: string; themes: { value: string; label: stri
       { value: 'midnight-forest', label: '48. Midnight Forest' },
     ],
   },
+  {
+    label: 'Градиентные (49–68)',
+    themes: [
+      { value: 'grad-aurora', label: '49. Aurora' },
+      { value: 'grad-sunset-glow', label: '50. Sunset Glow' },
+      { value: 'grad-ocean-depth', label: '51. Ocean Depth' },
+      { value: 'grad-peach-sorbet', label: '52. Peach Sorbet' },
+      { value: 'grad-mint-lagoon', label: '53. Mint Lagoon' },
+      { value: 'grad-lavender-mist', label: '54. Lavender Mist' },
+      { value: 'grad-golden-sand', label: '55. Golden Sand' },
+      { value: 'grad-rose-gold', label: '56. Rose Gold' },
+      { value: 'grad-midnight-sky', label: '57. Midnight Sky' },
+      { value: 'grad-coral-blaze', label: '58. Coral Blaze' },
+      { value: 'grad-forest-mist', label: '59. Forest Mist' },
+      { value: 'grad-berry-smoothie', label: '60. Berry Smoothie' },
+      { value: 'grad-desert-dawn', label: '61. Desert Dawn' },
+      { value: 'grad-glacier', label: '62. Glacier' },
+      { value: 'grad-volcanic', label: '63. Volcanic' },
+      { value: 'grad-cotton-sky', label: '64. Cotton Sky' },
+      { value: 'grad-emerald-night', label: '65. Emerald Night' },
+      { value: 'grad-amber-warmth', label: '66. Amber Warmth' },
+      { value: 'grad-frost-berry', label: '67. Frost Berry' },
+      { value: 'grad-cosmic-dust', label: '68. Cosmic Dust' },
+    ],
+  },
 ];
 
 /* ============================ КОНФИГУРАЦИЯ ============================ */
@@ -240,6 +265,9 @@ export function initCardConstructor(root: HTMLElement): () => void {
   const cardsArea = $<HTMLElement>('#cardsArea');
   const themeSelect = $<HTMLSelectElement>('#themeSelect');
   const formatSelect = $<HTMLSelectElement>('#formatSelect');
+  const themeDropdown = $<HTMLElement>('#themeDropdown');
+  const themeDropdownTrigger = $<HTMLButtonElement>('#themeDropdownTrigger');
+  const themeDropdownLabel = $<HTMLElement>('#themeDropdownLabel');
   const previewWorkspace = $<HTMLElement>('#previewWorkspace');
   const toast = $<HTMLElement>('#toast');
 
@@ -559,6 +587,28 @@ export function initCardConstructor(root: HTMLElement): () => void {
     if (!previewWorkspace) return;
     if (currentTheme === 'default') previewWorkspace.removeAttribute('data-theme');
     else previewWorkspace.setAttribute('data-theme', currentTheme);
+    syncThemeDropdown();
+  }
+
+  /* ---------- Синхронизация кастомного dropdown темы ---------- */
+  function syncThemeDropdown(): void {
+    if (!themeDropdownLabel || !themeDropdown) return;
+    // Найти label для текущего значения
+    let label = '1. Clean Minimal';
+    for (const g of THEME_GROUPS) {
+      for (const t of g.themes) {
+        if (t.value === currentTheme) {
+          label = t.label;
+          break;
+        }
+      }
+    }
+    themeDropdownLabel.textContent = label;
+    // Подсветить выбранный элемент
+    themeDropdown.querySelectorAll<HTMLElement>('.theme-item').forEach((item) => {
+      if (item.dataset.value === currentTheme) item.classList.add('selected');
+      else item.classList.remove('selected');
+    });
   }
 
   /* ---------- Рендер редактора ---------- */
@@ -1325,7 +1375,7 @@ export function initCardConstructor(root: HTMLElement): () => void {
   }
 
   function bindStatic(): void {
-    // Тема / формат
+    // Тема / формат (hidden native select change — вызывается программно из dropdown)
     themeSelect?.addEventListener('change', (e) => {
       currentTheme = (e.target as HTMLSelectElement).value;
       applyThemeToWorkspace();
@@ -1336,6 +1386,42 @@ export function initCardConstructor(root: HTMLElement): () => void {
       currentFormat = (e.target as HTMLSelectElement).value;
       renderPreview();
       scheduleSave({ silent: true });
+    });
+
+    // Кастомный аккордеон-dropdown темы: открытие/закрытие
+    themeDropdownTrigger?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!themeDropdown) return;
+      themeDropdown.classList.toggle('open');
+      const isOpen = themeDropdown.classList.contains('open');
+      themeDropdownTrigger.setAttribute('aria-expanded', String(isOpen));
+    });
+
+    // Раскрытие/сворачивание групп
+    themeDropdown?.querySelectorAll<HTMLElement>('.theme-group-header').forEach((header) => {
+      header.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const group = header.closest('.theme-group');
+        group?.classList.toggle('expanded');
+        const isExpanded = group?.classList.contains('expanded');
+        header.setAttribute('aria-expanded', String(isExpanded));
+      });
+    });
+
+    // Выбор темы из dropdown
+    themeDropdown?.querySelectorAll<HTMLElement>('.theme-item').forEach((item) => {
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const value = item.dataset.value || 'default';
+        // Синхронизируем скрытый native select и вызываем change
+        if (themeSelect) {
+          themeSelect.value = value;
+          themeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        // Закрываем dropdown
+        themeDropdown?.classList.remove('open');
+        themeDropdownTrigger?.setAttribute('aria-expanded', 'false');
+      });
     });
 
     // Кнопки сайдбара
@@ -1610,8 +1696,14 @@ export function initCardConstructor(root: HTMLElement): () => void {
 
     // фикс #24: закрытие попапа при клике вне (но не по сайдбару/модалке/интерактивным элементам)
     addDoc('click', (e) => {
-      if (!wordStylePopup?.classList.contains('active')) return;
+      // Закрытие dropdown темы при клике вне
       const t = e.target as HTMLElement;
+      if (themeDropdown?.classList.contains('open') && !themeDropdown.contains(t)) {
+        themeDropdown.classList.remove('open');
+        themeDropdownTrigger?.setAttribute('aria-expanded', 'false');
+      }
+
+      if (!wordStylePopup?.classList.contains('active')) return;
       if (wordStylePopup.contains(t)) return;
       if (editorSidebar?.contains(t)) return;
       if (colorModal?.contains(t)) return;
@@ -1626,7 +1718,10 @@ export function initCardConstructor(root: HTMLElement): () => void {
     // Escape
     addDoc('keydown', (e) => {
       if (e.key === 'Escape') {
-        if (wordStylePopup?.classList.contains('active')) {
+        if (themeDropdown?.classList.contains('open')) {
+          themeDropdown.classList.remove('open');
+          themeDropdownTrigger?.setAttribute('aria-expanded', 'false');
+        } else if (wordStylePopup?.classList.contains('active')) {
           closeWordStylePopup();
         } else if (colorModal?.classList.contains('active')) {
           closeColorModal();
