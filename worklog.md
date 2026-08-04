@@ -204,3 +204,34 @@ Stage Summary:
 - Complete visual transformation from amateur prototype to premium product.
 - Design philosophy: "Quiet Confidence" — calm zinc neutrals, near-black accent, one clear visual hierarchy, no decorative noise.
 - All 48 card themes preserved (content untouched), only editor chrome redesigned.
+
+---
+Task ID: 7
+Agent: main
+Task: Fix card editor button overflow, remove remaining emojis, fix undo/redo, add error traps and smoke tests.
+
+Work Log:
+- Reproduced button overflow bug at 320px viewport: actions overflowed block by 23px, h3 had 0px gap to actions.
+- Restructured card editor block: moved "Стили" button out of header into its own full-width row below. Header now contains only icon buttons (duplicate, move up, move down, delete) with SVG icons.
+- Added CSS: .btn-card-editor-palette (full-width, hover inverts to dark), h3 with text-overflow:ellipsis + min-width:0, actions flex-shrink:0, gap:8px.
+- Replaced emoji arrows (↶↷↥↧) in undo/redo/export/import buttons with inline SVG icons (rotate-ccw, rotate-cw, upload, download).
+- Removed 🎨 from modal title: "🎨 Настройка стилей (Карточка N)" → "Стили · Карточка N".
+- Removed all ❌ emojis from toast messages.
+- Fixed undo/redo bug: pushHistory was called BEFORE state modifications (saving pre-action state), breaking undo. Moved all pushHistory calls to AFTER state changes in: addCard, deleteCard, duplicateCard, moveCard, card-theme change, word-list-remove, wordClear, resetCardColors, importJSON.
+- Added global error traps: window 'error' and 'unhandledrejection' listeners that console.error with [Cardcraft] prefix. Added guard() wrapper for init functions. Cleanup removes all listeners.
+- Added console.log('[Cardcraft] Initialized successfully') for positive confirmation.
+- Created tests/smoke-test.js: 44 assertions covering DOM structure, emoji absence, sidebar toggle, card rendering, placeholder, add/duplicate/undo/delete, modal (no emoji, listNumber controls), theme switch, word styling, SVG icons, button geometry (no overflow/overlap).
+- Fixed test to be state-independent (works with any initial card count, checks first card specifically).
+
+Verification:
+- 320px viewport: overflow = -15px (buttons INSIDE block), gap = 10px (no overlap) — FIXED.
+- 1280px viewport: all 44 smoke tests pass, 0 failures.
+- Modal title: "Стили · Карточка 1" — no emoji.
+- No emojis in top-bar, sidebar, or modal text.
+- Undo/redo: duplicate → undo correctly restores previous state.
+- Browser errors: 0. Console: only "[Cardcraft] Initialized successfully" log.
+- Lint: 0 errors, 0 warnings.
+
+Stage Summary:
+- All reported bugs fixed: button overflow, emoji in modal, button overlap with title.
+- Bonus: fixed undo/redo logic, added error traps, created 44-test smoke suite (100% pass).

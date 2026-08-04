@@ -226,6 +226,26 @@ function getSelectedWord(el: HTMLInputElement | HTMLTextAreaElement): string {
 
 /* ============================ ГЛАВНАЯ ФУНКЦИЯ ============================ */
 export function initCardConstructor(root: HTMLElement): () => void {
+  /* ---------- Ловушки ошибок (console error traps) ---------- */
+  const errorHandler = (e: ErrorEvent) => {
+    console.error('[Cardcraft] Runtime error:', e.message, e.filename + ':' + e.lineno);
+  };
+  const unhandledRejection = (e: PromiseRejectionEvent) => {
+    console.error('[Cardcraft] Unhandled promise rejection:', e.reason);
+  };
+  window.addEventListener('error', errorHandler);
+  window.addEventListener('unhandledrejection', unhandledRejection);
+
+  /* ---------- Защитный логгер ---------- */
+  function guard<T>(label: string, fn: () => T): T | undefined {
+    try {
+      return fn();
+    } catch (err) {
+      console.error('[Cardcraft] Error in ' + label + ':', err);
+      return undefined;
+    }
+  }
+
   /* ---------- Ссылки на статические элементы ---------- */
   const $ = <T extends Element = HTMLElement>(sel: string): T | null => root.querySelector<T>(sel);
   const editorSidebar = $<HTMLElement>('#editorSidebar');
@@ -356,7 +376,7 @@ export function initCardConstructor(root: HTMLElement): () => void {
         if (err.name === 'QuotaExceededError') {
           if (!silent)
             showToast(
-              `❌ Недостаточно места (${(dataSize / 1024).toFixed(2)} KB). Удалите старые карточки.`,
+              `Недостаточно места (${(dataSize / 1024).toFixed(2)} KB). Удалите старые карточки.`,
             );
         } else {
           throw quotaError;
@@ -581,13 +601,16 @@ export function initCardConstructor(root: HTMLElement): () => void {
         <div class="card-editor-header">
           <h3>Карточка ${index + 1}</h3>
           <div class="card-editor-actions">
-            <button class="btn-icon btn-palette" data-action="palette" data-index="${index}" title="Настройка стилей">Стили</button>
-            <button class="btn-icon" data-action="duplicate" data-index="${index}" title="Дублировать">⧉</button>
-            <button class="btn-icon" data-action="move" data-index="${index}" data-dir="-1" title="Выше" ${index === 0 ? 'disabled' : ''}>↑</button>
-            <button class="btn-icon" data-action="move" data-index="${index}" data-dir="1" title="Ниже" ${index === cards.length - 1 ? 'disabled' : ''}>↓</button>
-            ${cards.length > 1 ? `<button class="btn-delete" data-action="delete" data-index="${index}" title="Удалить">✕</button>` : ''}
+            <button class="btn-icon" data-action="duplicate" data-index="${index}" title="Дублировать" aria-label="Дублировать"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+            <button class="btn-icon" data-action="move" data-index="${index}" data-dir="-1" title="Переместить выше" aria-label="Выше" ${index === 0 ? 'disabled' : ''}><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+            <button class="btn-icon" data-action="move" data-index="${index}" data-dir="1" title="Переместить ниже" aria-label="Ниже" ${index === cards.length - 1 ? 'disabled' : ''}><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+            ${cards.length > 1 ? `<button class="btn-delete" data-action="delete" data-index="${index}" title="Удалить карточку" aria-label="Удалить"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>` : ''}
           </div>
         </div>
+        <button class="btn-card-editor-palette" data-action="palette" data-index="${index}" title="Цвета и стили карточки">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+          <span>Стили</span>
+        </button>
         <div class="form-group">
           <label>Тема карточки</label>
           <select data-action="card-theme" data-index="${index}">
@@ -680,9 +703,9 @@ export function initCardConstructor(root: HTMLElement): () => void {
         btn.addEventListener('change', function () {
           const idx = Number(this.dataset.index);
           const val = (this as HTMLSelectElement).value;
-          pushHistory();
           cards[idx].theme = val === 'default' ? undefined : val;
           renderPreview();
+          pushHistory();
           scheduleSave({ silent: true });
         });
       }
@@ -848,32 +871,32 @@ export function initCardConstructor(root: HTMLElement): () => void {
 
   /* ---------- Действия с карточками ---------- */
   function addCard(): void {
-    pushHistory();
     cards.push(createEmptyCard());
     renderEditor();
     renderPreview();
+    pushHistory();
     scheduleSave({ silent: true });
     showToast('Карточка добавлена');
   }
 
   function deleteCard(idx: number): void {
     if (cards.length <= 1) return;
-    pushHistory();
     cards.splice(idx, 1);
     renderEditor();
     renderPreview();
+    pushHistory();
     scheduleSave({ silent: true });
     showToast('Карточка удалена');
   }
 
   // фикс #26: дублирование карточки
   function duplicateCard(idx: number): void {
-    pushHistory();
     const copy = deepClone(cards[idx]);
     copy.id = generateId();
     cards.splice(idx + 1, 0, copy);
     renderEditor();
     renderPreview();
+    pushHistory();
     scheduleSave({ silent: true });
     showToast('Карточка дублирована');
   }
@@ -881,10 +904,10 @@ export function initCardConstructor(root: HTMLElement): () => void {
   function moveCard(idx: number, dir: number): void {
     const newIdx = idx + dir;
     if (newIdx < 0 || newIdx >= cards.length) return;
-    pushHistory();
     [cards[idx], cards[newIdx]] = [cards[newIdx], cards[idx]];
     renderEditor();
     renderPreview();
+    pushHistory();
     scheduleSave({ silent: true });
   }
 
@@ -917,7 +940,7 @@ export function initCardConstructor(root: HTMLElement): () => void {
 
   function openColorModal(index: number): void {
     activeCardIndexForColors = index;
-    if (modalCardTitle) modalCardTitle.textContent = `🎨 Настройка стилей (Карточка ${index + 1})`;
+    if (modalCardTitle) modalCardTitle.textContent = `Стили · Карточка ${index + 1}`;
 
     // фикс #9: запоминаем состояние сайдбара, не меняем его
     sidebarWasCollapsedBeforeModal = editorSidebar?.classList.contains('collapsed') ?? true;
@@ -1103,10 +1126,10 @@ export function initCardConstructor(root: HTMLElement): () => void {
       btn.addEventListener('click', function () {
         const key = this.dataset.wordKey || '';
         if (activeCardIndexForWord === null) return;
-        pushHistory();
         delete cards[activeCardIndexForWord].wordStyles[key];
         renderPreview();
         renderWordStyleList();
+        pushHistory();
         scheduleSave({ silent: true });
       }),
     );
@@ -1154,7 +1177,7 @@ export function initCardConstructor(root: HTMLElement): () => void {
   async function copyCardToClipboard(node: HTMLElement): Promise<void> {
     try {
       if (!window.isSecureContext) {
-        showToast('❌ Копирование требует HTTPS. Скачиваю PNG вместо копирования…');
+        showToast('Копирование требует HTTPS. Скачиваю PNG вместо копирования…');
         await generateAndDownloadPng(node, 'card-copy.png');
         return;
       }
@@ -1162,7 +1185,7 @@ export function initCardConstructor(root: HTMLElement): () => void {
         toBlob(node, { pixelRatio: CONFIG.EXPORT_PIXEL_RATIO, cacheBust: true }),
       );
       if (!blob) {
-        showToast('❌ Не удалось создать изображение');
+        showToast('Не удалось создать изображение');
         return;
       }
       if (!navigator.clipboard || !window.ClipboardItem) {
@@ -1176,9 +1199,9 @@ export function initCardConstructor(root: HTMLElement): () => void {
       // Часто падает из-за отсутствия user-gesture или прав — фолбэк на скачивание
       const name = (err as Error)?.name || '';
       if (name === 'NotAllowedError') {
-        showToast('❌ Нет прав на буфер обмена. Скачиваю PNG…');
+        showToast('Нет прав на буфер обмена. Скачиваю PNG…');
       } else {
-        showToast('❌ Копирование не удалось. Скачиваю PNG…');
+        showToast('Копирование не удалось. Скачиваю PNG…');
       }
       try {
         await generateAndDownloadPng(node, 'card-copy.png');
@@ -1236,7 +1259,6 @@ export function initCardConstructor(root: HTMLElement): () => void {
       try {
         const parsed = JSON.parse(String(reader.result));
         if (!parsed.cards || !Array.isArray(parsed.cards)) throw new Error('bad');
-        pushHistory();
         cards = parsed.cards.map(migrateCard);
         if (parsed.theme) {
           currentTheme = parsed.theme;
@@ -1249,10 +1271,11 @@ export function initCardConstructor(root: HTMLElement): () => void {
         applyThemeToWorkspace();
         renderEditor();
         renderPreview();
+        pushHistory();
         scheduleSave({ silent: true });
         showToast('Данные импортированы из JSON');
       } catch {
-        showToast('❌ Не удалось прочитать JSON-файл');
+        showToast('Не удалось прочитать JSON-файл');
       }
     };
     reader.readAsText(file);
@@ -1514,7 +1537,6 @@ export function initCardConstructor(root: HTMLElement): () => void {
     // Сброс всех цветов
     resetCardColorsBtn?.addEventListener('click', () => {
       if (activeCardIndexForColors === null) return;
-      pushHistory();
       cards[activeCardIndexForColors].colors = {};
       cards[activeCardIndexForColors].sectionStyles = {};
       MODAL_FIELDS.forEach((f) => {
@@ -1536,6 +1558,7 @@ export function initCardConstructor(root: HTMLElement): () => void {
         }
       });
       renderPreview();
+      pushHistory();
       scheduleSave({ silent: true });
       showToast('Все кастомные цвета и стили карточки сброшены');
     });
@@ -1545,7 +1568,6 @@ export function initCardConstructor(root: HTMLElement): () => void {
       e.stopPropagation();
       if (activeCardIndexForWord === null || !activeWordStyles.text || !activeFieldForWord) return;
       const key = `${activeFieldForWord}::${activeWordStyles.text}`;
-      pushHistory();
       delete cards[activeCardIndexForWord].wordStyles?.[key];
       // Сбрасываем активные стили
       activeWordStyles = { text: activeWordStyles.text };
@@ -1557,6 +1579,7 @@ export function initCardConstructor(root: HTMLElement): () => void {
       }
       renderPreview();
       renderWordStyleList();
+      pushHistory();
       scheduleSave({ silent: true });
       showToast('Стиль слова сброшен');
     });
@@ -1661,11 +1684,11 @@ export function initCardConstructor(root: HTMLElement): () => void {
     saveCardsToLocalStorage({ silent: true });
   }
 
-  /* ---------- Инициализация ---------- */
-  loadCardsFromLocalStorage();
-  bindStatic();
-  renderEditor();
-  renderPreview();
+  /* ---------- Инициализация (с защитой) ---------- */
+  guard('loadCardsFromLocalStorage', loadCardsFromLocalStorage);
+  guard('bindStatic', bindStatic);
+  guard('renderEditor', renderEditor);
+  guard('renderPreview', renderPreview);
   // Стартовый снимок истории
   history = [snapshot()];
   histIndex = 0;
@@ -1676,11 +1699,14 @@ export function initCardConstructor(root: HTMLElement): () => void {
   } else {
     setSidebarOpen(false);
   }
+  console.log('[Cardcraft] Initialized successfully:', cards.length, 'cards loaded');
 
   // Возврат функции очистки (для React Strict Mode в dev)
   return () => {
     docListeners.forEach(({ type, fn }) => document.removeEventListener(type, fn));
     window.removeEventListener('beforeunload', saveOnUnload);
+    window.removeEventListener('error', errorHandler);
+    window.removeEventListener('unhandledrejection', unhandledRejection);
     if (saveTimer) clearTimeout(saveTimer);
     if (historyTimer) clearTimeout(historyTimer);
     if (toastTimer) clearTimeout(toastTimer);

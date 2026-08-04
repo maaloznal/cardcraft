@@ -117,16 +117,20 @@ export default function Home() {
 
           <div className="sidebar-extra-actions">
             <button className="btn-secondary" id="undoBtn" title="Отменить (Ctrl+Z)" type="button">
-              ↶ Отменить
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+              Отменить
             </button>
             <button className="btn-secondary" id="redoBtn" title="Повторить (Ctrl+Y)" type="button">
-              ↷ Повторить
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Повторить
             </button>
             <button className="btn-secondary" id="exportJsonBtn" title="Сохранить в файл" type="button">
-              ↥ Экспорт
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Экспорт
             </button>
             <button className="btn-secondary" id="importJsonBtn" title="Загрузить из файла" type="button">
-              ↧ Импорт
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Импорт
             </button>
             <input
               type="file"
