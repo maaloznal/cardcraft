@@ -1051,3 +1051,37 @@ Next steps:
 - CardStyleManager (extract modal color/style logic)
 - UI components (Accordion, Modal, Switch, etc.)
 - Migrate card-constructor.ts to use new modules as orchestrator
+
+---
+Task ID: 24
+Agent: main
+Task: StateManager improvements + generic HistoryManager + architecture docs.
+
+Work Log:
+
+1. StateManager restructured with sub-states:
+   - AppState now has: cards (CardsState), settings (SettingsState), ui (UIState)
+   - Each sub-state groups related fields — prevents flat monolith
+   - Added 10+ selectors: getCards(), getCard(idx), getCardCount(), getTheme(), getFormat(), getGradientAngle(), getProgressConfig(), getListStyle(), getSettings(), getUI()
+   - UI code should use selectors, not direct field access
+   - This allows changing internal structure without breaking consumers
+
+2. HistoryManager made generic:
+   - class HistoryManager<T> instead of HistoryManager<Snapshot>
+   - Can be used for any state shape (cards history, UI history, etc.)
+   - All methods type-safe with generic T
+
+3. Created docs/architecture.md:
+   - Visual dependency graph (5 layers: Core → Infrastructure → State → Rendering → UI)
+   - Dependency rules table (lower layers cannot import upper layers)
+   - Module responsibilities for each layer
+   - State structure documentation
+   - Data flow diagram (User → Orchestrator → StateManager → Listeners → Renderers → Storage/History)
+   - Planned modules documented (PreviewRenderer, EditorRenderer, WordEditorManager, UI Kit)
+
+Verification:
+- Lint: 0 errors, 0 warnings
+- Smoke test: 109/109 pass — zero regressions
+- StateManager compiles with sub-structures
+- HistoryManager compiles as generic
+- architecture.md created with complete dependency rules

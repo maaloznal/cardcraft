@@ -1,14 +1,13 @@
 /**
- * HistoryManager — undo/redo stack with debounced snapshots.
- * Only module that manages history. Other code calls push/undo/redo.
+ * HistoryManager — generic undo/redo stack with debounced snapshots.
+ * Not tied to any specific state shape.
  */
 
-import type { Snapshot } from '../core/types';
 import { deepClone } from '../core/utils';
 import { CONFIG } from '../core/constants';
 
-export class HistoryManager {
-  private history: Snapshot[] = [];
+export class HistoryManager<T> {
+  private history: T[] = [];
   private histIndex = -1;
   private historyTimer: ReturnType<typeof setTimeout> | null = null;
   private maxHistory: number;
@@ -17,8 +16,8 @@ export class HistoryManager {
     this.maxHistory = maxHistory;
   }
 
-  /** Take an immediate snapshot of current state */
-  push(snapshot: Snapshot): void {
+  /** Take an immediate snapshot */
+  push(snapshot: T): void {
     this.history = this.history.slice(0, this.histIndex + 1);
     this.history.push(deepClone(snapshot));
     if (this.history.length > this.maxHistory) {
@@ -28,43 +27,40 @@ export class HistoryManager {
     }
   }
 
-  /** Debounced push — merges rapid changes (e.g. typing) into one snapshot */
-  schedulePush(snapshot: Snapshot, delay = CONFIG.HISTORY_DEBOUNCE_MS): void {
+  /** Debounced push — merges rapid changes into one snapshot */
+  schedulePush(snapshot: T, delay = CONFIG.HISTORY_DEBOUNCE_MS): void {
     if (this.historyTimer) clearTimeout(this.historyTimer);
     this.historyTimer = setTimeout(() => this.push(snapshot), delay);
   }
 
-  /** Undo — returns previous snapshot or null if at beginning */
-  undo(): Snapshot | null {
+  /** Undo — returns previous snapshot or null */
+  undo(): T | null {
     if (this.histIndex <= 0) return null;
     this.histIndex--;
     return deepClone(this.history[this.histIndex]);
   }
 
-  /** Redo — returns next snapshot or null if at end */
-  redo(): Snapshot | null {
+  /** Redo — returns next snapshot or null */
+  redo(): T | null {
     if (this.histIndex >= this.history.length - 1) return null;
     this.histIndex++;
     return deepClone(this.history[this.histIndex]);
   }
 
   /** Initialize with starting snapshot */
-  init(snapshot: Snapshot): void {
+  init(snapshot: T): void {
     this.history = [deepClone(snapshot)];
     this.histIndex = 0;
   }
 
-  /** Can undo? */
   get canUndo(): boolean {
     return this.histIndex > 0;
   }
 
-  /** Can redo? */
   get canRedo(): boolean {
     return this.histIndex < this.history.length - 1;
   }
 
-  /** Clear all history */
   clear(): void {
     this.history = [];
     this.histIndex = -1;
