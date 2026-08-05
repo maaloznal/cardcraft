@@ -147,6 +147,13 @@ export const THEME_GROUPS: { label: string; themes: { value: string; label: stri
       { value: 'grad-pearl-shimmer', label: '88. Pearl Shimmer' },
     ],
   },
+  {
+    label: 'Без фона',
+    themes: [
+      { value: 'nobg-dark', label: '89. Тёмный текст (для светлого фона)' },
+      { value: 'nobg-light', label: '90. Светлый текст (для тёмного фона)' },
+    ],
+  },
 ];
 
 /* ============================ КОНФИГУРАЦИЯ ============================ */
@@ -314,6 +321,9 @@ export function initCardConstructor(root: HTMLElement): () => void {
   const progressBarToggle = $<HTMLInputElement>('#progressBarToggle');
   const progressBarStyleSelect = $<HTMLSelectElement>('#progressBarStyleSelect');
   const listStyleSelect = $<HTMLSelectElement>('#listStyleSelect');
+  const charLimitToggle = $<HTMLInputElement>('#charLimitToggle');
+  const charCounter = $<HTMLElement>('#charCounter');
+  const charCounterText = $<HTMLElement>('#charCounterText');
   const listNumSizeSlider = $<HTMLInputElement>('#listNumSizeSlider');
   const listNumSizeValue = $<HTMLElement>('#listNumSizeValue');
   const resizeDividerH = $<HTMLElement>('#resizeDividerH');
@@ -355,6 +365,16 @@ export function initCardConstructor(root: HTMLElement): () => void {
   let showProgressBar = true; // Улучшение#5: отдельный переключатель шкалы прогресса
   let progressBarStyle = 'default'; // стиль шкалы прогресса
   let listStyleType = 'numbers'; // Task 9: стиль списков (numbers/bullets/dashes/circles/squares/decorative)
+  let charLimitEnabled = false; // ограничение символов для соцсетей
+
+  // Лимиты символов по форматам
+  const FORMAT_CHAR_LIMITS: Record<string, number> = {
+    'aspect-4-5': 2200,   // Instagram
+    'telegram': 2048,
+    'whatsapp': 700,
+    'vk': 200,
+    'aspect-9-16': 2200,  // Stories — same as Instagram
+  };
   let activeCardIndexForColors: number | null = null;
   let lastActiveField = 'title';
 
@@ -446,6 +466,7 @@ export function initCardConstructor(root: HTMLElement): () => void {
         localStorage.setItem('flashcard-progress-style', progressBarStyle);
         localStorage.setItem('flashcard-list-style', listStyleType);
         localStorage.setItem('flashcard-gradient-angle', String(gradientAngle));
+        localStorage.setItem('flashcard-char-limit', String(charLimitEnabled));
         if (!silent) showToast('Карточки успешно сохранены!');
       } catch (quotaError) {
         const err = quotaError as Error;
@@ -472,6 +493,7 @@ export function initCardConstructor(root: HTMLElement): () => void {
     const savedProgressBarStyle = localStorage.getItem('flashcard-progress-style');
     const savedListStyle = localStorage.getItem('flashcard-list-style');
     const savedGradientAngle = localStorage.getItem('flashcard-gradient-angle');
+    const savedCharLimit = localStorage.getItem('flashcard-char-limit');
     if (savedCards) {
       try {
         const parsed = JSON.parse(savedCards) as Card[];
@@ -514,11 +536,16 @@ export function initCardConstructor(root: HTMLElement): () => void {
       if (gradientAngleSlider) gradientAngleSlider.value = String(gradientAngle);
       if (gradientAngleValue) gradientAngleValue.textContent = `${gradientAngle}°`;
     }
+    if (savedCharLimit !== null) {
+      charLimitEnabled = savedCharLimit === 'true';
+      if (charLimitToggle) charLimitToggle.checked = charLimitEnabled;
+    }
     applyThemeToWorkspace();
     applyNumberingVisibility();
     applyProgressBarVisibility();
     applyListStyle();
     applyProgressBarStyle();
+    applyCharLimit();
   }
 
   function migrateCard(card: Partial<Card>): Card {
@@ -708,6 +735,65 @@ export function initCardConstructor(root: HTMLElement): () => void {
     root.setAttribute('data-progress-style', progressBarStyle);
   }
 
+  /* ---------- Генерация HTML шкалы прогресса ---------- */
+  // Для bar-стилей (solid, dashed) — fill bar
+  // Для shape-стилей (circles, squares, diamonds, hexagons, stars) — N дискретных элементов
+  function buildProgressBarHtml(index: number, total: number): string {
+    const isShapeStyle = ['circles', 'squares', 'diamonds', 'hexagons', 'stars'].includes(progressBarStyle);
+    if (isShapeStyle) {
+      const items: string[] = [];
+      for (let i = 0; i < total; i++) {
+        const filled = i <= index;
+        items.push(`<span class="ps-item${filled ? ' filled' : ''}"></span>`);
+      }
+      return `<div class="progress progress-shapes">${items.join('')}</div>`;
+    }
+    // bar-стиль (solid, dashed)
+    const percent = Math.round(((index + 1) / total) * 100);
+    return `<div class="progress"><div class="progress-fill" style="width:${percent}%;"></div></div>`;
+  }
+
+  /* ---------- Применение ограничения символов ---------- */
+  function applyCharLimit(): void {
+    if (!editorCardsList) return;
+    const limit = charLimitEnabled ? (FORMAT_CHAR_LIMITS[currentFormat] || 0) : 0;
+    editorCardsList.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input[data-field], textarea[data-field]').forEach((el) => {
+      if (limit > 0) {
+        el.setAttribute('maxlength', String(limit));
+      } else {
+        // Восстанавливаем исходный maxlength из EDITOR_FIELDS
+        const field = el.dataset.field;
+        const f = EDITOR_FIELDS.find((ef) => ef.key === field);
+        if (f) el.setAttribute('maxlength', String(f.maxlength));
+      }
+    });
+    // Скрываем/показываем счётчик
+    if (charCounter) {
+      charCounter.style.display = charLimitEnabled && limit > 0 ? '' : 'none';
+    }
+  }
+
+  function updateCharCounter(idx: number): void {
+    if (!charLimitEnabled || !charCounterText || !charCounter) return;
+    const limit = FORMAT_CHAR_LIMITS[currentFormat] || 0;
+    if (limit <= 0) {
+      charCounter.style.display = 'none';
+      return;
+    }
+    // Считаем общее количество символов во всех текстовых полях карточки
+    const card = cards[idx];
+    if (!card) return;
+    const totalChars =
+      (card.title?.length || 0) +
+      (card.subtitle?.length || 0) +
+      (card.text?.length || 0) +
+      (card.listItems?.length || 0) +
+      (card.footer?.length || 0) +
+      (card.cta?.length || 0);
+    charCounterText.textContent = `${totalChars} / ${limit}`;
+    charCounter.classList.toggle('near-limit', totalChars >= limit * 0.9);
+  }
+
   /* ---------- Task 9: Применение стиля списков ---------- */
   function applyListStyle(): void {
     if (!root) return;
@@ -794,8 +880,15 @@ export function initCardConstructor(root: HTMLElement): () => void {
           pruneOrphanWordStyles(cards[idx]);
           // Оптимизация: точечное обновление вместо полной перестройки
           updatePreviewField(idx, field as string);
+          // Обновление счётчика символов
+          updateCharCounter(idx);
           scheduleSave({ silent: true });
           scheduleHistoryPush();
+        });
+
+        // Обновление счётчика при фокусе
+        el.addEventListener('focus', function () {
+          updateCharCounter(Number(this.dataset.index));
         });
 
         // Жёсткая очистка при вставке
@@ -1186,9 +1279,9 @@ export function initCardConstructor(root: HTMLElement): () => void {
     const total = cards.length;
 
     cards.forEach((card, index) => {
-      const percent = Math.round(((index + 1) / total) * 100);
       const cardNum = String(index + 1).padStart(2, '0');
       const totalNum = String(total).padStart(2, '0');
+      const progressHtml = buildProgressBarHtml(index, total);
 
       const titleStyle = buildSectionStyle(card, 'title');
       const subtitleStyle = buildSectionStyle(card, 'subtitle');
@@ -1234,7 +1327,7 @@ export function initCardConstructor(root: HTMLElement): () => void {
       wrapper.innerHTML = `
         <div class="card" id="card-node-${card.id}" ${themeAttr} ${formatAttr}>
           <div class="card-top-content" style="display:flex;flex-direction:column;gap:16px;">
-            <div class="progress"><div class="progress-fill" style="width:${percent}%;"></div></div>
+            ${progressHtml}
             <div class="tag"><span>${cardNum} / ${totalNum}</span><span></span></div>
             ${emptyHint}
             ${
@@ -1407,7 +1500,7 @@ export function initCardConstructor(root: HTMLElement): () => void {
       if (delBtn) delBtn.style.display = cards.length > 1 ? '' : 'none';
     });
 
-    // 4. Обновляем номера тегов в превью
+    // 4. Обновляем номера тегов и прогресс-бары в превью
     cardsArea?.querySelectorAll<HTMLElement>('.card').forEach((cardNode, i) => {
       const tag = cardNode.querySelector<HTMLElement>('.tag span');
       if (tag) {
@@ -1415,10 +1508,14 @@ export function initCardConstructor(root: HTMLElement): () => void {
         const totalNum = String(cards.length).padStart(2, '0');
         tag.textContent = `${cardNum} / ${totalNum}`;
       }
-      const progressFill = cardNode.querySelector<HTMLElement>('.progress-fill');
-      if (progressFill) {
-        const percent = Math.round(((i + 1) / cards.length) * 100);
-        progressFill.style.width = `${percent}%`;
+      // Перестраиваем прогресс-бар
+      const oldProgress = cardNode.querySelector<HTMLElement>('.progress');
+      if (oldProgress) {
+        const newProgressHtml = buildProgressBarHtml(i, cards.length);
+        const temp = document.createElement('div');
+        temp.innerHTML = newProgressHtml;
+        const newProgress = temp.firstElementChild;
+        if (newProgress) oldProgress.replaceWith(newProgress);
       }
       // Обновляем data-index на data-field элементах
       cardNode.querySelectorAll<HTMLElement>('[data-index]').forEach((el) => {
@@ -1795,8 +1892,15 @@ export function initCardConstructor(root: HTMLElement): () => void {
     }
   }
 
+  // Проверка: тема карточки "без фона" (прозрачный экспорт)
+  function isNoBgTheme(card: Card): boolean {
+    const theme = card.theme && card.theme !== 'default' ? card.theme : currentTheme;
+    return theme.startsWith('nobg-');
+  }
+
   async function generateAndDownloadPng(node: HTMLElement, filename: string): Promise<void> {
     try {
+      // Для тем "без фона" — экспорт с прозрачным фоном (html-to-image по умолчанию)
       const dataUrl = await withExportMode(node, () =>
         toPng(node, { pixelRatio: CONFIG.EXPORT_PIXEL_RATIO, cacheBust: true }),
       );
@@ -2139,7 +2243,16 @@ export function initCardConstructor(root: HTMLElement): () => void {
     });
     formatSelect?.addEventListener('change', (e) => {
       currentFormat = (e.target as HTMLSelectElement).value;
+      applyCharLimit();
       renderPreview();
+      scheduleSave({ silent: true });
+    });
+
+    // Переключатель лимита символов
+    charLimitToggle?.addEventListener('change', function () {
+      charLimitEnabled = this.checked;
+      applyCharLimit();
+      updateCharCounter(0);
       scheduleSave({ silent: true });
     });
 
@@ -2168,6 +2281,8 @@ export function initCardConstructor(root: HTMLElement): () => void {
     progressBarStyleSelect?.addEventListener('change', function () {
       progressBarStyle = this.value;
       applyProgressBarStyle();
+      // Для shape-стилей нужно перестроить HTML прогресс-бара
+      renderPreview();
       scheduleSave({ silent: true });
     });
 
@@ -2649,6 +2764,7 @@ export function initCardConstructor(root: HTMLElement): () => void {
   guard('bindStatic', bindStatic);
   guard('renderEditor', renderEditor);
   guard('renderPreview', renderPreview);
+  guard('applyCharLimit', applyCharLimit);
   // Стартовый снимок истории
   history = [snapshot()];
   histIndex = 0;

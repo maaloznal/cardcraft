@@ -252,7 +252,7 @@
 
     // 20. БАГ#1: Стили progress bar
     assert('Select стиля progress bar существует', !!q('#progressBarStyleSelect'));
-    var pbStyles = ['default','thin','thick','dashed','dots','squares','gradient','glow','minimal'];
+    var pbStyles = ['default','dashed','circles','squares','diamonds','hexagons','stars'];
     pbStyles.forEach(function(s) {
       q('#progressBarStyleSelect').value = s;
       q('#progressBarStyleSelect').dispatchEvent(new Event('change', {bubbles: true}));

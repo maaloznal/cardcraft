@@ -5,9 +5,12 @@ import { initCardConstructor, THEME_GROUPS } from '@/lib/card-constructor';
 import './card-constructor.css';
 
 const FORMATS = [
-  { value: 'auto', label: 'Стандартный' },
-  { value: 'aspect-4-5', label: '4:5 Instagram' },
-  { value: 'aspect-9-16', label: '9:16 Stories' },
+  { value: 'auto', label: 'Стандартный — 380×auto' },
+  { value: 'aspect-4-5', label: 'Instagram — 1080×1350' },
+  { value: 'aspect-9-16', label: 'Stories — 1080×1920' },
+  { value: 'whatsapp', label: 'WhatsApp — 1080×1920' },
+  { value: 'telegram', label: 'Telegram — 1080×1350' },
+  { value: 'vk', label: 'VK — 1200×630' },
 ];
 
 const FORMAT_BTNS = [
@@ -111,6 +114,16 @@ export default function Home() {
                 </option>
               ))}
             </select>
+            <div className="toggle-row" style={{ marginTop: 10 }}>
+              <span className="toggle-label">Лимит символов</span>
+              <label className="switch">
+                <input type="checkbox" id="charLimitToggle" />
+                <span className="switch-slider" />
+              </label>
+            </div>
+            <div className="char-counter" id="charCounter" style={{ display: 'none' }}>
+              <span id="charCounterText">0 / 0</span>
+            </div>
             </div>
             </div>
           </div>
@@ -238,14 +251,12 @@ export default function Home() {
             </div>
             <select id="progressBarStyleSelect" defaultValue="default">
               <option value="default">Сплошная линия</option>
-              <option value="thin">Тонкая линия</option>
-              <option value="thick">Толстая линия</option>
-              <option value="dashed">Пунктирная</option>
-              <option value="dots">Круглые индикаторы</option>
-              <option value="squares">Квадратные индикаторы</option>
-              <option value="gradient">Градиентная</option>
-              <option value="glow">Светящаяся</option>
-              <option value="minimal">Минималистичная</option>
+              <option value="dashed">Пунктирная линия</option>
+              <option value="circles">Круги</option>
+              <option value="squares">Квадраты</option>
+              <option value="diamonds">Ромбы</option>
+              <option value="hexagons">Шестиугольники</option>
+              <option value="stars">Звёзды</option>
             </select>
             </div>
             </div>

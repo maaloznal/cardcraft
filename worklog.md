@@ -909,3 +909,59 @@ Stage Summary:
 - All 8 polish items completed.
 - 111/111 tests pass, zero regressions.
 - Interface is cleaner, simpler, more logical.
+
+---
+Task ID: 21
+Agent: main
+Task: New features — progress bar rework, format expansion, char limit, no-bg themes.
+
+Work Log:
+
+#1 PROGRESS BAR REWORK:
+- Removed: thin, thick, gradient, glow, minimal, old dots/squares styles.
+- New 7 styles: solid (bar), dashed (bar), circles, squares, diamonds, hexagons, stars (shapes).
+- Shape styles render N discrete elements (.ps-item) — filled if index <= current, outline if > current.
+- buildProgressBarHtml(index, total) generates correct HTML based on progressBarStyle.
+- Bar styles use .progress-fill with width %; shape styles use flex of .ps-item spans.
+- CSS: .ps-item.filled = background:var(--accent-color); .ps-item:not(.filled) = border + opacity 0.35.
+- Hexagons/stars use clip-path; diamonds use transform: rotate(45deg).
+- Auto-adapts to theme via --accent-color (dark on light, light on dark, visible on gradient).
+- Progress bar style change triggers renderPreview for shape HTML rebuild.
+- Localized deletion rebuilds progress bars for all remaining cards.
+
+#2 FORMAT EXPANSION:
+- Added WhatsApp (1080×1920), Telegram (1080×1350), VK (1200×630).
+- All labels show pixel dimensions: "Instagram — 1080×1350", etc.
+- CSS: whatsapp = same as aspect-9-16; telegram = same as aspect-4-5; vk = landscape min-height 200px.
+
+#3 CHARACTER LIMIT:
+- Toggle in Format section: "Лимит символов" (on/off).
+- FORMAT_CHAR_LIMITS: Instagram 2200, Telegram 2048, WhatsApp 700, VK 200, Stories 2200.
+- When enabled: sets maxlength on all text fields to format limit.
+- Counter (#charCounter) shows total chars / limit (e.g. "542 / 700").
+- Counter updates on input and focus. Near-limit (90%+) turns red.
+- When disabled: restores original maxlengths, hides counter.
+- Persisted to localStorage.
+
+#4 "NO BACKGROUND" THEMES:
+- New theme group "Без фона" with 2 themes:
+  - nobg-dark: dark text for light backgrounds (transparent card bg).
+  - nobg-light: light text for dark backgrounds (transparent card bg).
+- --card-bg: transparent, --card-border: transparent, --card-shadow: none.
+- Preview shows checkerboard pattern (--preview-bg) to indicate transparency.
+- PNG export: html-to-image defaults to transparent background when card bg is transparent.
+- isNoBgTheme() helper checks for nobg-* prefix.
+
+Verification (109/109 tests pass):
+- 7 progress bar styles all apply correctly (default, dashed, circles, squares, diamonds, hexagons, stars).
+- Shape styles: 3 cards × 3 items = 9 total; card 1 has 1 filled, card 3 has 3 filled.
+- 6 formats with pixel dimensions displayed.
+- Char limit: toggle works, counter shows "0 / 700" for WhatsApp.
+- No-bg themes: cardBg=transparent, cardBorder=transparent, cardShadow=none.
+- 90 themes total (48 solid + 40 gradient + 2 no-bg).
+- 0 browser errors, 0 console errors, lint clean.
+
+Stage Summary:
+- All 4 new features implemented and verified.
+- 109/109 tests pass, zero regressions.
+- Features feel native to the Cardcraft design system.

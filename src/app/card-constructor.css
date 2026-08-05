@@ -1342,6 +1342,38 @@
   --cta-text-color: #4c1d95;
 }
 
+/* ================= ТЕМЫ «БЕЗ ФОНА» ================= */
+[data-theme="nobg-dark"] {
+  --card-bg: transparent;
+  --card-border: transparent;
+  --card-shadow: none;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --accent-color: #0f172a;
+  --accent-glow: transparent;
+  --progress-bg: rgba(15, 23, 42, 0.12);
+  --btn-accent-bg: transparent;
+  --btn-accent-border: #0f172a;
+  --font-family: "Golos Text", sans-serif;
+  --preview-bg: repeating-conic-gradient(#e2e8f0 0% 25%, #f1f5f9 0% 50%) 50% / 20px 20px;
+  --cta-text-color: #0f172a;
+}
+[data-theme="nobg-light"] {
+  --card-bg: transparent;
+  --card-border: transparent;
+  --card-shadow: none;
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.75);
+  --accent-color: #ffffff;
+  --accent-glow: transparent;
+  --progress-bg: rgba(255, 255, 255, 0.15);
+  --btn-accent-bg: transparent;
+  --btn-accent-border: rgba(255, 255, 255, 0.5);
+  --font-family: "Golos Text", sans-serif;
+  --preview-bg: repeating-conic-gradient(#1e293b 0% 25%, #0f172a 0% 50%) 50% / 20px 20px;
+  --cta-text-color: #ffffff;
+}
+
 
 /* ================= ДИЗАЙН-СИСТЕМА «CARDCRAFT» ================= */
 /* Философия: тихая уверенность. Zinc-палитра, near-black акцент, */
@@ -2320,12 +2352,18 @@
   font-family: var(--font-family);
   transition: box-shadow var(--dur-slow) var(--ease), transform var(--dur-slow) var(--ease);
 }
-.card[data-format="aspect-4-5"] {
+.card[data-format="aspect-4-5"],
+.card[data-format="telegram"] {
   min-height: 475px;
   justify-content: space-between;
 }
-.card[data-format="aspect-9-16"] {
+.card[data-format="aspect-9-16"],
+.card[data-format="whatsapp"] {
   min-height: 675px;
+  justify-content: space-between;
+}
+.card[data-format="vk"] {
+  min-height: 200px;
   justify-content: space-between;
 }
 
@@ -3172,123 +3210,108 @@ input[type="color"].color-picker-input::-moz-color-swatch {
 }
 
 /* ============================ Progress bar styles ============================ */
-/* Управление шкалой прогресса через data-progress-style на root + видимость через класс */
+/* Видимость через класс, стиль через data-progress-style на root */
 
-/* Переключатель видимости */
 .cc-root.no-progress-bar .progress {
   display: none !important;
 }
 
-/* default — сплошная линия */
-.cc-root[data-progress-style="default"] .progress {
-  height: 4px;
-  border-radius: 0;
-}
-.cc-root[data-progress-style="default"] .progress-fill {
-  border-radius: 0;
-}
-
-/* thin — тонкая линия */
-.cc-root[data-progress-style="thin"] .progress {
-  height: 2px;
-}
-.cc-root[data-progress-style="thin"] .progress-fill {
-  border-radius: 2px;
-}
-
-/* thick — толстая линия */
-.cc-root[data-progress-style="thick"] .progress {
-  height: 8px;
-  border-radius: 4px;
-}
-.cc-root[data-progress-style="thick"] .progress-fill {
-  border-radius: 4px;
-}
-
-/* dashed — пунктирная */
-.cc-root[data-progress-style="dashed"] .progress {
-  height: 4px;
-  background: transparent;
-  border-top: 4px dashed var(--progress-bg);
-  border-radius: 0;
-}
-.cc-root[data-progress-style="dashed"] .progress-fill {
-  height: 4px;
-  border-top: 4px dashed var(--accent-color);
-  background: transparent !important;
-  box-shadow: none;
-}
-
-/* dots — круглые индикаторы */
-.cc-root[data-progress-style="dots"] .progress {
-  height: 8px;
-  background: transparent;
+/* Базовые стили для дискретных индикаторов */
+.progress-shapes {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  height: 16px;
   overflow: visible;
 }
-.cc-root[data-progress-style="dots"] .progress-fill {
-  height: 8px;
-  border-radius: 0;
+.ps-item {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  position: relative;
+}
+.ps-item.filled {
+  background: var(--accent-color);
+}
+.ps-item:not(.filled) {
   background: transparent;
-  background-image: radial-gradient(circle, var(--accent-color) 3px, transparent 3px);
-  background-size: 12px 8px;
-  background-repeat: repeat-x;
-  box-shadow: none;
+  border: 1.5px solid var(--accent-color);
+  opacity: 0.35;
+}
+
+/* default — сплошная линия (заполнение + контур) */
+.cc-root[data-progress-style="default"] .progress {
+  height: 4px;
+  background: var(--progress-bg);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.cc-root[data-progress-style="default"] .progress-fill {
+  height: 100%;
+  background: var(--accent-color);
+  border-radius: 2px;
+  transition: width 0.3s var(--ease);
+}
+
+/* dashed — пунктирная линия */
+.cc-root[data-progress-style="dashed"] .progress {
+  height: 4px;
+  background: var(--progress-bg);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.cc-root[data-progress-style="dashed"] .progress-fill {
+  height: 100%;
+  background: repeating-linear-gradient(90deg, var(--accent-color) 0 6px, transparent 6px 10px);
+  border-radius: 2px;
+  transition: width 0.3s var(--ease);
+}
+
+/* circles — круглые индикаторы */
+.cc-root[data-progress-style="circles"] .ps-item {
+  border-radius: 50%;
+}
+.cc-root[data-progress-style="circles"] .ps-item.filled {
+  border-radius: 50%;
+}
+.cc-root[data-progress-style="circles"] .ps-item:not(.filled) {
+  border-radius: 50%;
 }
 
 /* squares — квадратные индикаторы */
-.cc-root[data-progress-style="squares"] .progress {
-  height: 6px;
-  background: transparent;
-  overflow: visible;
-}
-.cc-root[data-progress-style="squares"] .progress-fill {
-  height: 6px;
-  border-radius: 0;
-  background: transparent;
-  background-image: repeating-linear-gradient(90deg, var(--accent-color) 0 4px, transparent 4px 10px);
-  box-shadow: none;
-}
-
-/* gradient — градиентная */
-.cc-root[data-progress-style="gradient"] .progress {
-  height: 4px;
+.cc-root[data-progress-style="squares"] .ps-item {
   border-radius: 2px;
 }
-.cc-root[data-progress-style="gradient"] .progress-fill {
+
+/* diamonds — ромбы */
+.cc-root[data-progress-style="diamonds"] .ps-item {
+  transform: rotate(45deg);
   border-radius: 2px;
-  background: linear-gradient(90deg, var(--accent-color), var(--accent-glow), var(--accent-color));
 }
 
-/* glow — светящаяся */
-.cc-root[data-progress-style="glow"] .progress {
-  height: 4px;
+/* hexagons — шестиугольники */
+.cc-root[data-progress-style="hexagons"] .ps-item {
+  width: 14px;
+  height: 14px;
+  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
 }
-.cc-root[data-progress-style="glow"] .progress-fill {
-  border-radius: 2px;
-  box-shadow: 0 0 8px var(--accent-color), 0 0 4px var(--accent-glow);
-}
-
-/* minimal — минималистичный (только точка) */
-.cc-root[data-progress-style="minimal"] .progress {
-  height: 4px;
-  background: transparent;
-  overflow: visible;
-}
-.cc-root[data-progress-style="minimal"] .progress-fill {
-  height: 4px;
-  background: transparent;
-  position: relative;
-}
-.cc-root[data-progress-style="minimal"] .progress-fill::after {
-  content: '';
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+.cc-root[data-progress-style="hexagons"] .ps-item:not(.filled) {
+  border: none;
   background: var(--accent-color);
+  opacity: 0.18;
+}
+
+/* stars — звёзды */
+.cc-root[data-progress-style="stars"] .ps-item {
+  width: 16px;
+  height: 16px;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+.cc-root[data-progress-style="stars"] .ps-item:not(.filled) {
+  border: none;
+  background: var(--accent-color);
+  opacity: 0.18;
 }
 
 /* ============================ TASK 9: List styles ============================ */
@@ -3659,4 +3682,17 @@ input[type="color"].color-picker-input::-moz-color-swatch {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* ============================ Char counter ============================ */
+.char-counter {
+  margin-top: 4px;
+  text-align: right;
+  font-size: 11px;
+  font-family: "Geist Mono", ui-monospace, monospace;
+  color: var(--ui-text-tertiary);
+}
+.char-counter.near-limit {
+  color: var(--ui-danger);
+  font-weight: 600;
 }
