@@ -8,9 +8,7 @@
  * Public API:
  *   render(cards)                      — full rebuild O(n)
  *   onAction(handler)                  — callback for editor actions
- *   updateCardTitle(index)             — O(1) title badge update
- *   getCardInput(cardId, field)        — get input element for a card/field
- *   focusField(cardId, field)          — focus a specific input
+ *   collapseLastCard()                 — collapse the last card block
  */
 
 import type { Card } from '../core/types';
@@ -47,37 +45,6 @@ export class EditorRenderer {
   }
 
   // ─── Targeted updates ───────────────────────────────────────
-
-  /** Update card number badge and title (O(1)) */
-  updateCardNumber(index: number): void {
-    const blocks = this.container.querySelectorAll<HTMLElement>('.card-editor-block');
-    const block = blocks[index];
-    if (!block) return;
-
-    const badge = block.querySelector<HTMLElement>('.card-editor-num-badge');
-    if (badge) badge.textContent = String(index + 1);
-
-    const h3 = block.querySelector<HTMLElement>('.card-editor-title-group h3');
-    if (h3) {
-      h3.textContent = `Карточка ${index + 1}`;
-      h3.setAttribute('title', `Карточка ${index + 1}`);
-    }
-
-    // Update data-index on all elements
-    block.querySelectorAll<HTMLElement>('[data-index]').forEach((el) => {
-      el.dataset.index = String(index);
-    });
-
-    // Update move button disabled states
-    const moveUp = block.querySelector<HTMLElement>('[data-action="move"][data-dir="-1"]');
-    const moveDown = block.querySelector<HTMLElement>('[data-action="move"][data-dir="1"]');
-    if (moveUp) moveUp.toggleAttribute('disabled', index === 0);
-    if (moveDown) moveDown.toggleAttribute('disabled', index === blocks.length - 1);
-
-    // Show/hide delete button
-    const delBtn = block.querySelector<HTMLElement>('[data-action="delete"]');
-    if (delBtn) delBtn.style.display = blocks.length > 1 ? '' : 'none';
-  }
 
   /** Set the last card block to collapsed state */
   collapseLastCard(): void {

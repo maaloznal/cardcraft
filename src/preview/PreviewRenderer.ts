@@ -7,9 +7,7 @@
  *   updateCardField(card, field)    — O(1) text update
  *   updateCardStyle(card, field)    — O(1) style update (colors, word styles)
  *   updateCardTheme(card, theme)    — O(1) theme attribute
- *   removeCard(cardId)              — O(1) DOM removal
- *   insertCard(card, index, settings) — O(1) DOM insertion
- *   updateProgressBars(total)       — O(n) rebuild progress bars only
+ *   onAction(handler)               — callback for download/copy/delete/dblclick
  */
 
 import type { Card } from '../core/types';
@@ -143,54 +141,6 @@ export class PreviewRenderer {
     const cardTheme = sanitizeTheme(card.theme && card.theme !== 'default' ? card.theme : globalTheme);
     if (cardTheme !== 'default') cardNode.setAttribute('data-theme', cardTheme);
     else cardNode.removeAttribute('data-theme');
-  }
-
-  /** Remove a card from DOM (O(1)) */
-  removeCard(cardId: string): void {
-    const node = this.getCardNode(cardId);
-    node?.closest('.card-wrapper')?.remove();
-  }
-
-  /** Insert a card at a specific index (O(1)) */
-  insertCard(card: Card, index: number, total: number, settings: PreviewSettings): void {
-    const wrapper = this.buildCardWrapper(card, index, total, settings);
-    const wrappers = this.container.querySelectorAll<HTMLElement>('.card-wrapper');
-    if (index >= wrappers.length) {
-      this.container.appendChild(wrapper);
-    } else {
-      this.container.insertBefore(wrapper, wrappers[index]);
-    }
-  }
-
-  /** Rebuild all progress bars (O(n)) — used when count or style changes */
-  updateProgressBars(cards: Card[], settings: PreviewSettings): void {
-    const total = cards.length;
-    this.container.querySelectorAll<HTMLElement>('.card').forEach((cardNode, i) => {
-      const oldProgress = cardNode.querySelector<HTMLElement>('.progress');
-      if (oldProgress) {
-        const html = buildProgressBarHtml(i, total, settings.progressBarStyle);
-        const temp = document.createElement('div');
-        temp.innerHTML = html;
-        const newProgress = temp.firstElementChild;
-        if (newProgress) oldProgress.replaceWith(newProgress);
-      }
-      // Update tag
-      if (settings.showCardNumbers) {
-        const tag = cardNode.querySelector<HTMLElement>('.tag span');
-        if (tag) {
-          const cardNum = String(i + 1).padStart(2, '0');
-          const totalNum = String(total).padStart(2, '0');
-          tag.textContent = `${cardNum} / ${totalNum}`;
-        }
-      }
-      // Update data-index on all elements
-      cardNode.querySelectorAll<HTMLElement>('[data-index]').forEach((el) => {
-        el.dataset.index = String(i);
-      });
-      // Update delete-preview data-index
-      const delPreview = cardNode.parentElement?.querySelector<HTMLElement>('[data-action="delete-preview"]');
-      if (delPreview) delPreview.dataset.index = String(i);
-    });
   }
 
   // ─── Private helpers ────────────────────────────────────────

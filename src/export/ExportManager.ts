@@ -1,12 +1,24 @@
 /**
  * ExportManager — handles PNG export and clipboard copy.
  * Only module that interacts with html-to-image.
+ *
+ * Bundle optimization: html-to-image is dynamically imported only when
+ * the user actually triggers an export (download/copy). This keeps the
+ * initial page load fast — html-to-image (~520KB) is not in the main chunk.
  */
 
-import { toPng, toBlob } from 'html-to-image';
 import { CONFIG } from '../core/constants';
 
 const EXPORT_PIXEL_RATIO = CONFIG.EXPORT_PIXEL_RATIO;
+
+/** Lazily load html-to-image only when needed. */
+async function loadHtmlToImage(): Promise<{
+  toPng: typeof import('html-to-image').toPng;
+  toBlob: typeof import('html-to-image').toBlob;
+}> {
+  const mod = await import('html-to-image');
+  return { toPng: mod.toPng, toBlob: mod.toBlob };
+}
 
 /** Generate a PNG data URL from a DOM node */
 export async function generatePng(
@@ -16,6 +28,7 @@ export async function generatePng(
   root.classList.add('exporting');
   try {
     await document.fonts.ready;
+    const { toPng } = await loadHtmlToImage();
     return await toPng(node, {
       pixelRatio: EXPORT_PIXEL_RATIO,
       cacheBust: true,
@@ -33,6 +46,7 @@ export async function generateBlob(
   root.classList.add('exporting');
   try {
     await document.fonts.ready;
+    const { toBlob } = await loadHtmlToImage();
     return await toBlob(node, {
       pixelRatio: EXPORT_PIXEL_RATIO,
       cacheBust: true,

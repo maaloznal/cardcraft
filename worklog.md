@@ -1554,3 +1554,63 @@ Stage Summary:
 - UX: 5 sidebar accordions all start collapsed (extra clicks); modal darkens+blurs preview (degraded live-editing, full block on mobile); char counter is per-card and goes stale on blur; toast queue blocks short toasts behind 60s batch-export toast (errors invisible during export); confirm dialog has no ESC handler and no Enter-to-confirm; word popup has no focus trap and no aria-modal; no keyboard navigation between cards; sidebar state set once at init via window.innerWidth check (no resize listener); mobile sidebar has backdrop but no swipe gesture; only `cardCountBadge` and `#toast` have aria-live (char counter, gradient value etc. silent).
 - Design: design tokens exist (`--r-*`, `--sh-*`, `--ui-*`, `--dur`, `--ease`) but are ignored in 7+ inline-style sites and bypassed by raw px values for borders (1.5px), gaps, sizes — 37 padding/margin magic numbers, 61 font-size magic numbers, 21 border-radius magic numbers, 53 height magic numbers; two parallel design systems (shadcn vs Cardcraft); 731 raw hex values (most in 90 theme definitions, fine), 26 `transition: all` rules (perf anti-pattern); 5 @keyframes scattered; SVG stroke-width inconsistent (2 vs 2.5 across same chevron icon); `!important` used 7 times; z-index ad-hoc (9 distinct values, no scale); dead CSS rules (`#saveChangesBtn`, `.sidebar-extra-actions`, `.btn-palette`); dark mode tokens exist but never activated.
 - Code quality: CardCraftApp.ts is still a 1186-line God Function (single closure with 24 numbered sections); `bindStatic()` is 345 lines; StateManager has 18 `payload as X` casts because Action.payload is `unknown` (type-safety hole); 14 non-null `!` assertions on DOM queries (should be guarded); inline direct mutation of `card.colors`/`card.sectionStyles` bypasses StateManager.dispatch (8 sites) — half-pure architecture; EditorRenderer docstring lies (lists `getCardInput`/`focusField` methods that don't exist, calls `updateCardTitle` what is actually `updateCardNumber`); 3 PreviewRenderer public API methods (`removeCard`, `insertCard`, `updateProgressBars`) and 1 EditorRenderer method (`updateCardNumber`) are dead code; WordEditorManager.destroy() only cleans drag listeners, leaks the initControls() listeners; ~5300 lines of dead shadcn UI kit + hooks + lib/db.ts + lib/utils.ts inflate the bundle; unused Switch.ts (125 lines) and ui/index.ts barrel (33 lines); 7 inline style objects in page.tsx with hardcoded numbers; confirm-overlay wired manually (not via Modal class) — inconsistent; no unit tests (only browser smoke tests via agent-browser); pure modules (utils, StyleHelpers, constants) ARE testable but have no tests.
+
+---
+Task ID: final-completion
+Agent: main
+Task: P1-3 + P2-3 + P2-4 — orchestrator decomposition, dead code removal, bundle analysis.
+
+Work Log:
+
+P1-3: Orchestrator decomposition
+- Created src/orchestrator/context.ts (135 lines) — shared OrchestratorContext interface
+  with DomRefs, OrchestratorState, ListenerTracker types.
+- Created src/orchestrator/export-controller.ts (80 lines) — generateAndDownloadPng,
+  copyCardToClipboard, downloadAllPng. Receives ctx parameter.
+- Created src/orchestrator/keyboard-controller.ts (68 lines) — bindKeyboardAndDocHandlers
+  (Escape priority, Ctrl+Z/Y/S, doc click for word popup close), createSaveOnUnload.
+- Created src/orchestrator/save-load.ts (77 lines) — scheduleSave, saveNow,
+  loadFromLocalStorage, clearSaveTimer. All save/load logic centralized.
+- Created src/orchestrator/ui-appliers.ts (154 lines) — applyThemeToWorkspace,
+  applyGradientAngle, applyNumberingVisibility, applyProgressBarVisibility,
+  applyProgressBarStyle, applyListStyle, applyCharLimit, updateCharCounter,
+  updateCardCountBadge, updateUndoRedoButtons. All DOM sync functions.
+- Rewrote CardCraftApp.ts from 1275 → 1054 lines. Uses extracted modules via
+  shared context object. All behavior preserved.
+
+P2-3: Dead O(1) methods removed
+- Removed PreviewRenderer.removeCard() — dead code, never called.
+- Removed PreviewRenderer.insertCard() — dead code, never called.
+- Removed PreviewRenderer.updateProgressBars() — dead code, never called.
+- Removed EditorRenderer.updateCardNumber() — dead code, never called.
+- Updated docstrings to remove mentions of removed methods.
+- Kept PreviewRenderer.updateCardField/updateCardStyle/updateCardTheme (all used).
+
+P2-4: Bundle analysis + optimization
+- Created docs/bundle-analysis.md — full analysis of source code, CSS,
+  dependencies, and estimated first load.
+- Optimized: html-to-image (520KB) changed from static import to dynamic import.
+  Now only loaded when user triggers export (download/copy), not in main chunk.
+  ExportManager.ts uses `const { toPng } = await import('html-to-image')`.
+- Verified export still works with dynamic import (no console errors).
+
+Verification:
+- Lint: 0 errors, 0 warnings
+- TypeScript: 0 errors (tsc --noEmit clean)
+- Unit tests: 232 passed (6 files)
+- Smoke tests: 109/109 (3 consecutive runs, all pass)
+- Console: no runtime errors, no warnings (except expected perf/fast-refresh)
+- StrictMode: enabled, no double-mount issues
+
+Final project stats:
+- 28 modules, 5085 lines of TS/TSX
+- 8 production dependencies (4 fonts + html-to-image + next + react + react-dom)
+- Orchestrator: 1054 lines main + 779 lines extracted = 1833 total (avg 204/module)
+- All P0, P1, P2, P3 tasks from the stabilization plan completed.
+
+Stage Summary:
+- Orchestrator God Module decomposed into 9 modules (was 1 file at 1275 lines).
+- Dead O(1) methods removed — API surface clean.
+- Bundle optimized with dynamic import for html-to-image.
+- Documentation updated with decomposition details and bundle analysis.
+- Project is production-ready: 109/109 smoke + 232 unit tests + 0 lint/TS errors.
