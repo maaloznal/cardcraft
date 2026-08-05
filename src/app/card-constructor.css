@@ -1183,29 +1183,30 @@
 
 /* ================= LAYOUT ================= */
 .app-layout {
-  display: flex;
-  flex: 1;
+  display: block;
+  position: relative;
+  width: 100%;
   min-height: calc(100vh - 56px);
-  align-items: stretch;
 }
 
-/* ================= SIDEBAR ================= */
+/* ================= SIDEBAR (floating panel) ================= */
 .editor-sidebar {
   width: 300px;
-  flex-shrink: 0;
   background: var(--ui-surface);
   border-right: 1px solid var(--ui-border);
+  box-shadow: var(--sh-lg);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transition: margin-left var(--dur-slow) var(--ease), transform var(--dur-slow) var(--ease);
-  position: relative;
-  height: calc(100vh - 56px);
-  position: sticky;
+  transition: transform var(--dur-slow) var(--ease);
+  position: fixed;
   top: 56px;
+  left: 0;
+  bottom: 0;
+  z-index: 100;
 }
 .editor-sidebar.collapsed {
-  margin-left: -300px;
+  transform: translateX(-100%);
 }
 
 /* Улучшение#1: Независимая прокрутка редактора карточек */
@@ -1213,15 +1214,73 @@
   flex-shrink: 0;
   border-bottom: none;
   overflow-y: auto;
-  min-height: 80px;
-  max-height: 50vh;
+  min-height: 60px;
 }
 .sidebar-scroll-area {
   flex: 1;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  min-height: 80px;
+  min-height: 60px;
+}
+
+/* Sidebar accordions (upper sections) */
+.sidebar-accordion {
+  border-bottom: 1px solid var(--ui-border);
+}
+.sidebar-accordion:last-child {
+  border-bottom: none;
+}
+.sidebar-accordion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 11px 20px;
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ui-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: all var(--dur) var(--ease);
+  text-align: left;
+}
+.sidebar-accordion-header:hover {
+  background: var(--ui-surface-hover);
+  color: var(--ui-text);
+}
+.sidebar-accordion-header svg {
+  flex-shrink: 0;
+  transition: transform var(--dur) var(--ease);
+}
+.sidebar-accordion.expanded .sidebar-accordion-header svg {
+  transform: rotate(180deg);
+}
+.sidebar-accordion-body {
+  display: none;
+  padding: 0 20px 12px;
+}
+.sidebar-accordion.expanded .sidebar-accordion-body {
+  display: block;
+  animation: sidebarAccordionIn 0.2s var(--ease);
+}
+@keyframes sidebarAccordionIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+/* Remove section padding inside accordion (accordion provides padding) */
+.sidebar-accordion .sidebar-section {
+  padding: 8px 0 4px;
+}
+
+/* Workspace — не зависит от sidebar */
+.preview-workspace {
+  width: 100%;
+  min-height: calc(100vh - 56px);
 }
 
 /* ================= Resize dividers ================= */
@@ -1335,6 +1394,7 @@
 }
 .gradient-angle-slider {
   width: 100%;
+  max-width: 240px;
   height: 4px;
   -webkit-appearance: none;
   appearance: none;
@@ -1373,6 +1433,7 @@
 .cc-root textarea,
 .cc-root select {
   width: 100%;
+  max-width: 260px;
   background: var(--ui-surface);
   border: 1px solid var(--ui-border);
   border-radius: var(--r-md);
@@ -1884,13 +1945,10 @@
 
 /* ================= WORKSPACE ================= */
 .preview-workspace {
-  flex: 1;
-  min-width: 0;
   display: flex;
   flex-direction: column;
   padding: 32px;
   overflow-y: auto;
-  transition: margin-right var(--dur-slow) var(--ease);
 }
 .preview-workspace.modal-open {
   margin-right: 0;

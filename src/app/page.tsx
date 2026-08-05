@@ -92,7 +92,13 @@ export default function Home() {
         {/* Sidebar */}
         <aside className="editor-sidebar collapsed" id="editorSidebar">
           <div className="sidebar-fixed-header">
-          <div className="sidebar-section">
+          <div className="sidebar-accordion" data-sidebar-accordion>
+            <button className="sidebar-accordion-header" type="button" data-sidebar-toggle>
+              <span>Тема оформления</span>
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div className="sidebar-accordion-body">
+            <div className="sidebar-section">
             <label className="sidebar-label">Тема оформления</label>
             {/* Скрытый native select для совместимости с TS логикой */}
             <select id="themeSelect" defaultValue="default" aria-hidden="true" style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none', overflow: 'hidden' }}>
@@ -136,9 +142,17 @@ export default function Home() {
                 ))}
               </div>
             </div>
+            </div>
+            </div>
           </div>
 
-          <div className="sidebar-section">
+          <div className="sidebar-accordion" data-sidebar-accordion>
+            <button className="sidebar-accordion-header" type="button" data-sidebar-toggle>
+              <span>Формат</span>
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div className="sidebar-accordion-body">
+            <div className="sidebar-section">
             <label className="sidebar-label" htmlFor="formatSelect">Формат</label>
             <select id="formatSelect" defaultValue="auto">
               {FORMATS.map((f) => (
@@ -147,9 +161,17 @@ export default function Home() {
                 </option>
               ))}
             </select>
+            </div>
+            </div>
           </div>
 
-          <div className="sidebar-section gradient-control-section">
+          <div className="sidebar-accordion" data-sidebar-accordion>
+            <button className="sidebar-accordion-header" type="button" data-sidebar-toggle>
+              <span>Угол градиента</span>
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div className="sidebar-accordion-body">
+            <div className="sidebar-section gradient-control-section">
             <label className="sidebar-label" htmlFor="gradientAngleSlider">
               Угол градиента
               <span className="gradient-angle-value" id="gradientAngleValue">135°</span>
@@ -162,9 +184,17 @@ export default function Home() {
               defaultValue={135}
               className="gradient-angle-slider"
             />
+            </div>
+            </div>
           </div>
 
-          <div className="sidebar-section">
+          <div className="sidebar-accordion" data-sidebar-accordion>
+            <button className="sidebar-accordion-header" type="button" data-sidebar-toggle>
+              <span>Шкала прогресса</span>
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div className="sidebar-accordion-body">
+            <div className="sidebar-section">
             <label className="sidebar-label" htmlFor="progressBarStyleSelect">
               Шкала прогресса
             </label>
@@ -176,9 +206,17 @@ export default function Home() {
               <option value="gradient">Градиентная</option>
               <option value="hidden">Скрыть</option>
             </select>
+            </div>
+            </div>
           </div>
 
-          <div className="sidebar-section">
+          <div className="sidebar-accordion" data-sidebar-accordion>
+            <button className="sidebar-accordion-header" type="button" data-sidebar-toggle>
+              <span>Стиль списков</span>
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div className="sidebar-accordion-body">
+            <div className="sidebar-section">
             <label className="sidebar-label" htmlFor="listStyleSelect">
               Стиль списков
             </label>
@@ -190,9 +228,17 @@ export default function Home() {
               <option value="squares">Цифры в квадрате</option>
               <option value="decorative">Декоративные маркеры</option>
             </select>
+            </div>
+            </div>
           </div>
 
-          <div className="sidebar-section display-options-section">
+          <div className="sidebar-accordion" data-sidebar-accordion>
+            <button className="sidebar-accordion-header" type="button" data-sidebar-toggle>
+              <span>Отображение</span>
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div className="sidebar-accordion-body">
+            <div className="sidebar-section display-options-section">
             <label className="sidebar-label">Отображение</label>
             <div className="toggle-row">
               <span className="toggle-label">Нумерация карточек</span>
@@ -200,6 +246,8 @@ export default function Home() {
                 <input type="checkbox" id="numberingToggle" defaultChecked />
                 <span className="switch-slider" />
               </label>
+            </div>
+            </div>
             </div>
           </div>
           </div>

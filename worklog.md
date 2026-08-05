@@ -654,3 +654,63 @@ Stage Summary:
 - Vertical resize — adjustable height between settings and card editor.
 - Horizontal resize — adjustable sidebar width, cards not scaled.
 - Professional IDE-like feel (Figma/VS Code style).
+
+---
+Task ID: 18
+Agent: main
+Task: Workspace architecture rework — floating sidebar, bidirectional vertical resize, control max-widths, sidebar accordions.
+
+Work Log:
+
+БАГ#1 — Vertical resize bidirectional:
+- Root cause: fixedHeader had max-height: 50vh in CSS — artificial limit preventing upper area from growing.
+- Removed max-height: 50vh, kept min-height: 60px.
+- Resize logic already correct: Math.min(Math.max(60, startHeight + dy), sidebarHeight - 60) — allows upper area to grow up to sidebarHeight - 60.
+- Verified: headerHeight 245→343px on drag down (upper area grew, lower area shrank).
+
+БАГ#2 — Floating sidebar (architecture rework):
+- Root cause: sidebar was in flex layout (flex-shrink: 0), changing width affected workspace width.
+- Reworked: sidebar now position: fixed (floating panel), top: 56px, left: 0, bottom: 0, z-index: 100.
+- app-layout changed from display: flex to display: block.
+- preview-workspace: width: 100%, min-height: calc(100vh - 56px) — always full width.
+- Sidebar resize changes only sidebar width, workspace completely unaffected.
+- Verified: wsWidth 1280px before and after resize (not changed), cardLeft 450px (not shifted), cardWidth 380px (not scaled).
+
+БАГ#3 — Control max-widths:
+- Root cause: inputs/selects/sliders had width: 100% — stretched to full sidebar width.
+- Added max-width: 260px for input[type="text"], textarea, select.
+- Added max-width: 240px for gradient-angle-slider.
+- Controls now maintain reasonable proportions regardless of sidebar width.
+
+Улучшение — Sidebar accordions:
+- Wrapped all 6 upper sections (Тема оформления, Формат, Угол градиента, Шкала прогресса, Стиль списков, Отображение) in .sidebar-accordion.
+- Each has .sidebar-accordion-header (clickable) + .sidebar-accordion-body (collapsible).
+- All closed by default (0 expanded).
+- Click toggles expanded state, smooth 200ms animation, chevron rotates.
+- Multiple sections can be open simultaneously.
+- Added handler in bindStatic for [data-sidebar-toggle].
+- CSS: border-bottom between sections, hover state, padding adjustment.
+
+CSS changes:
+- .app-layout: display: block (was flex).
+- .editor-sidebar: position: fixed, top: 56px, left: 0, bottom: 0, z-index: 100, box-shadow: var(--sh-lg).
+- .editor-sidebar.collapsed: transform: translateX(-100%) (was margin-left: -300px).
+- .sidebar-fixed-header: removed max-height: 50vh.
+- .preview-workspace: width: 100%, removed flex: 1 and min-width: 0.
+- New: .sidebar-accordion, .sidebar-accordion-header, .sidebar-accordion-body with animations.
+- Controls: max-width added.
+
+Verification (109/109 tests pass):
+- 6 sidebar accordions, 0 expanded by default, click expands (body: none→block).
+- Vertical resize: 245→343px (bidirectional, upper grows, lower shrinks).
+- Horizontal resize: sidebar width changes, wsWidth 1280px unchanged, cardLeft 450px unchanged, cardWidth 380px unchanged.
+- Controls: slider maxWidth 240px, select maxWidth 260px.
+- 0 browser errors, 0 console errors, lint clean.
+
+Stage Summary:
+- Complete workspace architecture rework.
+- Sidebar is now floating panel (position: fixed) — resize doesn't affect Preview.
+- Vertical resize is bidirectional (no artificial limits).
+- Controls have max-widths (no stretching).
+- All 6 upper sections are accordions (closed by default).
+- Professional IDE-like feel achieved.

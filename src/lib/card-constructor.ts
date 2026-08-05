@@ -1993,8 +1993,8 @@ export function initCardConstructor(root: HTMLElement): () => void {
       if (!isDragging) return;
       const dy = e.clientY - startY;
       const sidebarHeight = editorSidebar!.getBoundingClientRect().height;
-      // Минимум 80px для каждой области, максимум — sidebarHeight - 80
-      const newHeight = Math.min(Math.max(80, startHeight + dy), sidebarHeight - 80);
+      // Минимум 60px для каждой области, максимум — sidebarHeight - 60
+      const newHeight = Math.min(Math.max(60, startHeight + dy), sidebarHeight - 60);
       fixedHeader!.style.height = `${newHeight}px`;
       fixedHeader!.style.flex = 'none';
     };
@@ -2036,7 +2036,8 @@ export function initCardConstructor(root: HTMLElement): () => void {
     };
   }
 
-  /* ---------- Задача#3: Горизонтальный resize (ширина sidebar) ---------- */
+  /* ---------- БАГ#2: Горизонтальный resize (ширина floating sidebar) ---------- */
+  // Sidebar — position: fixed, не влияет на workspace. Resize меняет только ширину панели.
   let hResizeCleanup: (() => void) | null = null;
   function initHorizontalResize(): void {
     if (!resizeDividerV || !editorSidebar || hResizeCleanup) return;
@@ -2061,8 +2062,8 @@ export function initCardConstructor(root: HTMLElement): () => void {
     const onPointerMove = (e: PointerEvent) => {
       if (!isDragging) return;
       const dx = e.clientX - startX;
-      // Минимум 240px, максимум 560px
-      const newWidth = Math.min(Math.max(240, startWidth + dx), 560);
+      // Минимум 260px, максимум 520px
+      const newWidth = Math.min(Math.max(260, startWidth + dx), 520);
       editorSidebar!.style.width = `${newWidth}px`;
       editorSidebar!.style.transition = 'none';
     };
@@ -2083,12 +2084,12 @@ export function initCardConstructor(root: HTMLElement): () => void {
       }
     };
 
-    // Восстанавливаем сохранённую ширину (cardsArea восстанавливается в init после setSidebarOpen)
+    // Восстанавливаем сохранённую ширину
     try {
       const saved = localStorage.getItem('flashcard-sidebar-width');
       if (saved) {
         const w = Number(saved);
-        if (w >= 240 && w <= 560) {
+        if (w >= 260 && w <= 520) {
           editorSidebar.style.width = `${w}px`;
         }
       }
@@ -2383,6 +2384,15 @@ export function initCardConstructor(root: HTMLElement): () => void {
         e.stopPropagation();
         const group = header.closest('.modal-accordion-group');
         group?.classList.toggle('expanded');
+      });
+    });
+
+    // Улучшение: Аккордеоны верхних секций sidebar
+    root.querySelectorAll<HTMLElement>('[data-sidebar-toggle]').forEach((header) => {
+      header.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const accordion = header.closest('.sidebar-accordion');
+        accordion?.classList.toggle('expanded');
       });
     });
 
