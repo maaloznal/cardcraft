@@ -714,3 +714,134 @@ Stage Summary:
 - Controls have max-widths (no stretching).
 - All 6 upper sections are accordions (closed by default).
 - Professional IDE-like feel achieved.
+
+---
+Task ID: grad-themes
+Agent: general-purpose
+Task: Add 20 new gradient themes (grad-aurora-borealis … grad-pearl-shimmer, numbered 69–88) to the Cardcraft card constructor.
+
+Work Log:
+- Read existing gradient theme block pattern in src/app/card-constructor.css (lines 939–1043, grad-cosmic-dust is last).
+- Read existing THEME_GROUPS array in src/lib/card-constructor.ts (group "Градиентные (49–68)", 20 entries ending with grad-cosmic-dust).
+- Appended 20 new `[data-theme="grad-*"]` blocks to card-constructor.css immediately after grad-cosmic-dust (now at lines 1044–1343). Each block defines all 13 required CSS variables (--card-bg, --card-border, --card-shadow, --text-primary, --text-secondary, --accent-color, --accent-glow, --progress-bg, --btn-accent-bg, --btn-accent-border, --font-family, --preview-bg, --cta-text-color).
+- Every --card-bg uses `linear-gradient(var(--gradient-angle, 135deg), …)` — no fixed angles anywhere.
+- Fonts rotated across "Golos Text", "Lora", "Manrope" (per theme mood).
+- Light themes (sakura-bloom, rose-quartz-dream, mint-fresh, ice-crystal, citrus-burst, storm-cloud, tropical-paradise, frost-morning, earth-tones, pearl-shimmer): dark --text-primary, white-ish translucent --btn-accent-bg, dark --cta-text-color, dark --preview-bg.
+- Dark themes (aurora-borealis, deep-ocean, warm-sunset, northern-lights, amber-glow, twilight-blaze, velvet-night, wine-cellar, neon-pulse, mystic-forest): --text-primary #ffffff, translucent accent-tinted --btn-accent-bg over dark gradient, --cta-text-color #ffffff, dark --preview-bg.
+- All --card-shadow use rgba with the theme's accent color (matching the existing premium pattern).
+- Updated THEME_GROUPS in card-constructor.ts: relabelled group to "Градиентные (49–88)" and appended 20 new theme entries (value/label) numbered 69–88 after grad-cosmic-dust, in the same group.
+
+Themes added (number → value → label):
+69 grad-aurora-borealis — Aurora Borealis       (dark)
+70 grad-sakura-bloom — Sakura Bloom             (light)
+71 grad-deep-ocean — Deep Ocean                 (dark)
+72 grad-warm-sunset — Warm Sunset               (dark)
+73 grad-northern-lights — Northern Lights       (dark)
+74 grad-rose-quartz-dream — Rose Quartz Dream   (light)
+75 grad-amber-glow — Amber Glow                 (dark)
+76 grad-mint-fresh — Mint Fresh                 (light)
+77 grad-twilight-blaze — Twilight Blaze         (dark)
+78 grad-ice-crystal — Ice Crystal               (light)
+79 grad-velvet-night — Velvet Night             (dark)
+80 grad-citrus-burst — Citrus Burst             (light)
+81 grad-storm-cloud — Storm Cloud               (light)
+82 grad-tropical-paradise — Tropical Paradise   (light)
+83 grad-wine-cellar — Wine Cellar               (dark)
+84 grad-frost-morning — Frost Morning           (light)
+85 grad-neon-pulse — Neon Pulse                 (dark)
+86 grad-earth-tones — Earth Tones               (light)
+87 grad-mystic-forest — Mystic Forest           (dark)
+88 grad-pearl-shimmer — Pearl Shimmer           (light)
+
+Verification:
+- Grep count of new `[data-theme="grad-…"]` blocks in CSS: 20.
+- Grep count of new `value: 'grad-…'` entries in TS: 20.
+- All 20 use `var(--gradient-angle, 135deg)` (verified: no fixed `135deg` literal appears outside the fallback in --card-bg across the new blocks).
+
+Stage Summary:
+- 20 gradient themes added (numbered 69–88).
+- Both CSS theme blocks and THEME_GROUPS array updated; group label now "Градиентные (49–88)".
+- Total gradient themes in app: 40 (49–88).
+- Next: optional visual smoke test via Agent Browser at `/` (out of scope for this task).
+
+---
+Task ID: 19
+Agent: main
+Task: UX/UI revision — 12 points comprehensive rework.
+
+Work Log:
+
+#1 Floating panel → flex layout:
+- Reverted sidebar from position:fixed back to flex layout (flex-shrink: 0, flex: 1 workspace).
+- Sidebar no longer overlaps Preview — both occupy their own space side by side.
+
+#2 Component alignment:
+- Removed max-width: 260px from inputs/selects and max-width: 240px from sliders.
+- All controls now use width: 100% — unified sizing across the panel.
+
+#3 Card actions SVG icons + delete:
+- Replaced text buttons "Скачать PNG" and "Копировать" with SVG icon buttons.
+- Added third action: delete (trash icon) with data-action="delete-preview".
+- All three icons: 15x15, stroke-width: 2, unified style.
+
+#4 Mass actions in editor:
+- Removed "Скачать все" from top bar.
+- Added "Скачать все" + "Удалить все" buttons at bottom of sidebar scroll area.
+- "Удалить все" opens confirmation dialog (#confirmOverlay) with "Отмена" / "Удалить" buttons.
+- Dialog closes on outside click, Escape, or Cancel.
+
+#5 Card naming:
+- Changed "Без названия" to "Карточка N" (where N is the card number).
+- Updated both initial render and real-time title input handler.
+
+#6 New cards collapsed:
+- addCard() now adds 'collapsed' class to the last card-editor-block after render.
+- Chevron rotates -90deg to indicate collapsed state.
+
+#7 Localized deletion:
+- deleteCard() now removes only the specific card-wrapper and card-editor-block DOM nodes.
+- Updates remaining cards' numbers (badges, tags, progress bars, data-index attributes).
+- No full renderPreview() call — O(1) deletion.
+
+#8 Removed obsolete buttons:
+- Removed "Сохранить" (#saveChangesBtn), "Экспорт" (#exportJsonBtn), "Импорт" (#importJsonBtn).
+- Removed all associated handlers and importJSON/exportJSON function references.
+
+#9 Gradient themes expanded:
+- Added 20 new gradient themes (69-88): aurora-borealis, sakura-bloom, deep-ocean, warm-sunset, northern-lights, rose-quartz-dream, amber-glow, mint-fresh, twilight-blaze, ice-crystal, velvet-night, citrus-burst, storm-cloud, tropical-paradise, wine-cellar, frost-morning, neon-pulse, earth-tones, mystic-forest, pearl-shimmer.
+- Total: 88 themes (48 solid + 40 gradient), all use var(--gradient-angle, 135deg).
+- Group label updated to "Градиентные (49–88)".
+
+#10 Card theme moved to styles modal:
+- Removed card-theme dropdown from card editor blocks.
+- Added card-theme dropdown as first section in the styles modal (#modalCardThemeDropdown).
+- Synced in openColorModal — shows current card's theme.
+- Handlers for trigger toggle, group expand, theme select with updateCardTheme.
+- Closes on outside click.
+
+#11 Undo/Redo in top bar:
+- Moved Undo/Redo buttons from sidebar to top bar as icon buttons (#undoBtn, #redoBtn).
+- 36x36 btn-icon style, SVG icons, disabled state when no history.
+
+#12 Removed duplicate labels:
+- Removed all inner sidebar-label elements that duplicated accordion header text.
+- Each sidebar accordion now has only one title (the header).
+- Gradient angle value moved to a separate .gradient-value-row.
+
+Verification (107/107 tests pass):
+- Top bar: Undo/Redo SVG icons, no "Скачать все".
+- Sidebar: "Скачать все" + "Удалить все" at bottom, no Save/Export/Import.
+- Card actions: 3 SVG icons (download, copy, delete).
+- Card title: "Карточка 1" (not "Без названия").
+- New cards: collapsed by default.
+- Deletion: localized (no full re-render).
+- Confirmation dialog: shows for "Удалить все", cancel/confirm work.
+- 88 themes total, new gradient themes render correctly.
+- Card theme in modal as first section.
+- 6 sidebar accordions, all closed by default, 0 duplicate labels.
+- 0 browser errors, 0 console errors, lint clean.
+
+Stage Summary:
+- All 12 UX/UI revision points implemented.
+- Editor is cleaner, faster, more professional.
+- 107/107 tests pass, zero regressions.

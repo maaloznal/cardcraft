@@ -113,7 +113,7 @@ export const THEME_GROUPS: { label: string; themes: { value: string; label: stri
     ],
   },
   {
-    label: 'Градиентные (49–68)',
+    label: 'Градиентные (49–88)',
     themes: [
       { value: 'grad-aurora', label: '49. Aurora' },
       { value: 'grad-sunset-glow', label: '50. Sunset Glow' },
@@ -135,6 +135,26 @@ export const THEME_GROUPS: { label: string; themes: { value: string; label: stri
       { value: 'grad-amber-warmth', label: '66. Amber Warmth' },
       { value: 'grad-frost-berry', label: '67. Frost Berry' },
       { value: 'grad-cosmic-dust', label: '68. Cosmic Dust' },
+      { value: 'grad-aurora-borealis', label: '69. Aurora Borealis' },
+      { value: 'grad-sakura-bloom', label: '70. Sakura Bloom' },
+      { value: 'grad-deep-ocean', label: '71. Deep Ocean' },
+      { value: 'grad-warm-sunset', label: '72. Warm Sunset' },
+      { value: 'grad-northern-lights', label: '73. Northern Lights' },
+      { value: 'grad-rose-quartz-dream', label: '74. Rose Quartz Dream' },
+      { value: 'grad-amber-glow', label: '75. Amber Glow' },
+      { value: 'grad-mint-fresh', label: '76. Mint Fresh' },
+      { value: 'grad-twilight-blaze', label: '77. Twilight Blaze' },
+      { value: 'grad-ice-crystal', label: '78. Ice Crystal' },
+      { value: 'grad-velvet-night', label: '79. Velvet Night' },
+      { value: 'grad-citrus-burst', label: '80. Citrus Burst' },
+      { value: 'grad-storm-cloud', label: '81. Storm Cloud' },
+      { value: 'grad-tropical-paradise', label: '82. Tropical Paradise' },
+      { value: 'grad-wine-cellar', label: '83. Wine Cellar' },
+      { value: 'grad-frost-morning', label: '84. Frost Morning' },
+      { value: 'grad-neon-pulse', label: '85. Neon Pulse' },
+      { value: 'grad-earth-tones', label: '86. Earth Tones' },
+      { value: 'grad-mystic-forest', label: '87. Mystic Forest' },
+      { value: 'grad-pearl-shimmer', label: '88. Pearl Shimmer' },
     ],
   },
 ];
@@ -322,13 +342,16 @@ export function initCardConstructor(root: HTMLElement): () => void {
   const wordStyleList = $<HTMLElement>('#wordStyleList');
 
   const addCardBtn = $<HTMLButtonElement>('#addCardBtn');
-  const saveChangesBtn = $<HTMLButtonElement>('#saveChangesBtn');
   const saveAllBtn = $<HTMLButtonElement>('#saveAll');
-  const exportJsonBtn = $<HTMLButtonElement>('#exportJsonBtn');
-  const importJsonBtn = $<HTMLButtonElement>('#importJsonBtn');
-  const importJsonInput = $<HTMLInputElement>('#importJsonInput');
+  const deleteAllBtn = $<HTMLButtonElement>('#deleteAllBtn');
+  const confirmOverlay = $<HTMLElement>('#confirmOverlay');
+  const confirmOk = $<HTMLButtonElement>('#confirmOk');
+  const confirmCancel = $<HTMLButtonElement>('#confirmCancel');
   const undoBtn = $<HTMLButtonElement>('#undoBtn');
   const redoBtn = $<HTMLButtonElement>('#redoBtn');
+  const modalCardThemeDropdown = $<HTMLElement>('#modalCardThemeDropdown');
+  const modalCardThemeTrigger = $<HTMLButtonElement>('#modalCardThemeTrigger');
+  const modalCardThemeLabel = $<HTMLElement>('#modalCardThemeLabel');
   const wordPopupHeader = $<HTMLElement>('#wordPopupHeader');
   const cardCountBadge = $<HTMLElement>('#cardCountBadge');
 
@@ -717,49 +740,7 @@ export function initCardConstructor(root: HTMLElement): () => void {
       const block = document.createElement('div');
       block.className = 'card-editor-block';
 
-      // Аккордеон-dropdown для индивидуальной темы карточки (как в общих стилях)
-      // card.theme === undefined или 'default' → «По умолчанию» (используется глобальная тема)
-      const cardThemeValue = card.theme && card.theme !== 'default' ? card.theme : 'default';
-      let cardThemeLabel = 'По умолчанию';
-      if (card.theme && card.theme !== 'default') {
-        for (const g of THEME_GROUPS) {
-          for (const t of g.themes) {
-            if (t.value === cardThemeValue) {
-              cardThemeLabel = t.label;
-              break;
-            }
-          }
-        }
-      }
-      const cardThemeDropdownHtml = `
-        <div class="theme-dropdown card-theme-dropdown" data-card-index="${index}">
-          <button class="theme-dropdown-trigger card-theme-trigger" data-action="card-theme-trigger" data-index="${index}" type="button">
-            <span class="theme-dropdown-label card-theme-label">${escapeHtml(cardThemeLabel)}</span>
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
-          <div class="theme-dropdown-panel card-theme-panel">
-            <button class="theme-item card-theme-item${cardThemeValue === 'default' ? ' selected' : ''}" data-action="card-theme-select" data-index="${index}" data-value="default" data-label="По умолчанию" type="button">По умолчанию</button>
-            ${THEME_GROUPS.map(
-              (g) => `
-            <div class="theme-group" data-card-index="${index}">
-              <button class="theme-group-header card-theme-group-header" data-action="card-theme-group" data-index="${index}" type="button">
-                <span>${escapeHtml(g.label)}</span>
-                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-              </button>
-              <div class="theme-group-items">
-                ${g.themes
-                  .map(
-                    (t) =>
-                      `<button class="theme-item card-theme-item${cardThemeValue === t.value ? ' selected' : ''}" data-action="card-theme-select" data-index="${index}" data-value="${t.value}" data-label="${escapeHtml(t.label)}" type="button">${escapeHtml(t.label)}</button>`,
-                  )
-                  .join('')}
-              </div>
-            </div>`,
-            ).join('')}
-          </div>
-        </div>`;
-
-      const cardTitlePreview = card.title ? escapeHtml(card.title.length > 32 ? card.title.slice(0, 31) + '…' : card.title) : 'Без названия';
+      const cardTitlePreview = card.title ? escapeHtml(card.title.length > 32 ? card.title.slice(0, 31) + '…' : card.title) : `Карточка ${index + 1}`;
 
       block.innerHTML = `
         <div class="card-editor-header">
@@ -768,7 +749,7 @@ export function initCardConstructor(root: HTMLElement): () => void {
           </button>
           <div class="card-editor-title-group">
             <span class="card-editor-num-badge">${index + 1}</span>
-            <h3 title="${escapeHtml(card.title || 'Без названия')}">${cardTitlePreview}</h3>
+            <h3 title="${escapeHtml(card.title || `Карточка ${index + 1}`)}">${cardTitlePreview}</h3>
           </div>
           <div class="card-editor-actions">
             <button class="btn-icon" data-action="duplicate" data-index="${index}" title="Дублировать" aria-label="Дублировать"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
@@ -782,10 +763,6 @@ export function initCardConstructor(root: HTMLElement): () => void {
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
             <span>Стили</span>
           </button>
-          <div class="form-group">
-            <label>Тема карточки</label>
-            ${cardThemeDropdownHtml}
-          </div>
           ${EDITOR_FIELDS.map(
             (f) => `
           <div class="form-group">
@@ -819,9 +796,10 @@ export function initCardConstructor(root: HTMLElement): () => void {
             const block = this.closest('.card-editor-block');
             const h3 = block?.querySelector<HTMLElement>('.card-editor-title-group h3');
             if (h3) {
-              const val = this.value || 'Без названия';
+              const idx = Number(this.dataset.index);
+              const val = this.value || `Карточка ${idx + 1}`;
               h3.textContent = val.length > 32 ? val.slice(0, 31) + '…' : val;
-              h3.setAttribute('title', this.value || 'Без названия');
+              h3.setAttribute('title', this.value || `Карточка ${idx + 1}`);
             }
           }
           scheduleSave({ silent: true });
@@ -878,52 +856,10 @@ export function initCardConstructor(root: HTMLElement): () => void {
         btn.addEventListener('click', function () {
           moveCard(Number(this.dataset.index), Number(this.dataset.dir));
         });
-      } else if (action === 'card-theme-trigger') {
-        // Открытие/закрытие dropdown темы карточки
-        btn.addEventListener('click', function (e) {
-          e.stopPropagation();
-          const dropdown = this.closest('.theme-dropdown');
-          if (!dropdown) return;
-          // Закрываем все другие открытые dropdown'ы
-          editorCardsList?.querySelectorAll('.theme-dropdown.open').forEach((d) => {
-            if (d !== dropdown) d.classList.remove('open');
-          });
-          dropdown.classList.toggle('open');
-        });
-      } else if (action === 'card-theme-group') {
-        // Раскрытие/сворачивание группы тем
-        btn.addEventListener('click', function (e) {
-          e.stopPropagation();
-          const group = this.closest('.theme-group');
-          group?.classList.toggle('expanded');
-        });
-      } else if (action === 'card-theme-select') {
-        // Выбор темы для карточки
-        btn.addEventListener('click', function (e) {
-          e.stopPropagation();
-          const idx = Number(this.dataset.index);
-          const val = this.dataset.value || 'default';
-          const label = this.dataset.label || '';
-          cards[idx].theme = val === 'default' ? undefined : val;
-          // Обновляем label триггера
-          const dropdown = this.closest('.theme-dropdown');
-          const labelEl = dropdown?.querySelector<HTMLElement>('.card-theme-label');
-          if (labelEl) labelEl.textContent = label;
-          // Обновляем выделение
-          dropdown?.querySelectorAll('.card-theme-item').forEach((item) => {
-            item.classList.toggle('selected', item === this);
-          });
-          // Закрываем dropdown
-          dropdown?.classList.remove('open');
-          // Точечное обновление темы конкретной карточки
-          updateCardTheme(idx);
-          pushHistory();
-          scheduleSave({ silent: true });
-        });
       }
     });
 
-    // Закрытие dropdown'ов темы карточки при клике вне обрабатывается в document click handler
+    // Закрытие dropdown'ов при клике вне обрабатывается в document click handler
   }
 
   /* ---------- Конфигурация полей для точечного создания/удаления ---------- */
@@ -1360,8 +1296,9 @@ export function initCardConstructor(root: HTMLElement): () => void {
           </div>
         </div>
         <div class="card-actions">
-          <button class="btn-card-action" data-action="download" data-card-id="card-node-${card.id}" data-filename="card-${index + 1}.png">Скачать PNG</button>
-          <button class="btn-card-action" data-action="copy" data-card-id="card-node-${card.id}">Копировать</button>
+          <button class="btn-card-action" data-action="download" data-card-id="card-node-${card.id}" data-filename="card-${index + 1}.png" title="Скачать" aria-label="Скачать"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+          <button class="btn-card-action" data-action="copy" data-card-id="card-node-${card.id}" title="Копировать" aria-label="Копировать"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+          <button class="btn-card-action btn-card-action-danger" data-action="delete-preview" data-index="${index}" title="Удалить" aria-label="Удалить"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>
         </div>
       `;
       cardsArea.appendChild(wrapper);
@@ -1378,6 +1315,14 @@ export function initCardConstructor(root: HTMLElement): () => void {
       btn.addEventListener('click', async function () {
         const node = document.getElementById(this.dataset.cardId || '');
         if (node) await copyCardToClipboard(node);
+      }),
+    );
+
+    // Удаление карточки из превью
+    cardsArea.querySelectorAll<HTMLElement>('[data-action="delete-preview"]').forEach((btn) =>
+      btn.addEventListener('click', function () {
+        const idx = Number(this.dataset.index);
+        deleteCard(idx);
       }),
     );
 
@@ -1420,6 +1365,12 @@ export function initCardConstructor(root: HTMLElement): () => void {
     cards.push(createEmptyCard());
     renderEditor();
     renderPreview();
+    // Новая карточка — свёрнутая по умолчанию
+    const blocks = editorCardsList?.querySelectorAll<HTMLElement>('.card-editor-block');
+    const lastBlock = blocks?.[blocks.length - 1];
+    lastBlock?.classList.add('collapsed');
+    const chevron = lastBlock?.querySelector<HTMLElement>('.card-collapse-toggle svg');
+    if (chevron) chevron.style.transform = 'rotate(-90deg)';
     pushHistory();
     scheduleSave({ silent: true });
     showToast('Карточка добавлена');
@@ -1427,9 +1378,75 @@ export function initCardConstructor(root: HTMLElement): () => void {
 
   function deleteCard(idx: number): void {
     if (cards.length <= 1) return;
+    const cardId = cards[idx].id;
     cards.splice(idx, 1);
-    renderEditor();
-    renderPreview();
+
+    // Локализованное удаление — убираем только DOM-узлы этой карточки
+    // 1. Удаляем card-wrapper из превью
+    const previewNode = document.getElementById(`card-node-${cardId}`);
+    previewNode?.closest('.card-wrapper')?.remove();
+
+    // 2. Удаляем card-editor-block из редактора
+    const editorBlock = editorCardsList?.querySelector<HTMLElement>(
+      `.card-editor-block .btn-icon[data-action="delete"][data-index="${idx}"]`,
+    )?.closest('.card-editor-block');
+    editorBlock?.remove();
+
+    // 3. Обновляем номера оставшихся карточек в редакторе
+    editorCardsList?.querySelectorAll<HTMLElement>('.card-editor-block').forEach((block, i) => {
+      const badge = block.querySelector<HTMLElement>('.card-editor-num-badge');
+      if (badge) badge.textContent = String(i + 1);
+      const h3 = block.querySelector<HTMLElement>('.card-editor-title-group h3');
+      if (h3 && !h3.textContent?.startsWith('Карточка') === false) {
+        // Если показывается "Карточка N", обновляем номер
+        if (h3.textContent?.startsWith('Карточка ')) {
+          h3.textContent = `Карточка ${i + 1}`;
+          h3.setAttribute('title', `Карточка ${i + 1}`);
+        }
+      }
+      // Обновляем data-index на всех кнопках и полях
+      block.querySelectorAll<HTMLElement>('[data-index]').forEach((el) => {
+        el.dataset.index = String(i);
+      });
+      // Обновляем disabled state кнопок перемещения
+      const moveUp = block.querySelector<HTMLElement>('[data-action="move"][data-dir="-1"]');
+      const moveDown = block.querySelector<HTMLElement>('[data-action="move"][data-dir="1"]');
+      if (moveUp) moveUp.toggleAttribute('disabled', i === 0);
+      if (moveDown) moveDown.toggleAttribute('disabled', i === cards.length - 1);
+      // Скрываем/показываем кнопку удаления
+      const delBtn = block.querySelector<HTMLElement>('[data-action="delete"]');
+      if (delBtn) delBtn.style.display = cards.length > 1 ? '' : 'none';
+    });
+
+    // 4. Обновляем номера тегов в превью
+    cardsArea?.querySelectorAll<HTMLElement>('.card').forEach((cardNode, i) => {
+      const tag = cardNode.querySelector<HTMLElement>('.tag span');
+      if (tag) {
+        const cardNum = String(i + 1).padStart(2, '0');
+        const totalNum = String(cards.length).padStart(2, '0');
+        tag.textContent = `${cardNum} / ${totalNum}`;
+      }
+      const progressFill = cardNode.querySelector<HTMLElement>('.progress-fill');
+      if (progressFill) {
+        const percent = Math.round(((i + 1) / cards.length) * 100);
+        progressFill.style.width = `${percent}%`;
+      }
+      // Обновляем data-index на data-field элементах
+      cardNode.querySelectorAll<HTMLElement>('[data-index]').forEach((el) => {
+        el.dataset.index = String(i);
+      });
+      // Обновляем delete-preview data-index
+      const delPreview = cardNode.parentElement?.querySelector<HTMLElement>('[data-action="delete-preview"]');
+      if (delPreview) delPreview.dataset.index = String(i);
+    });
+
+    // 5. Обновляем счётчик
+    if (cardCountBadge) {
+      const n = cards.length;
+      const word = n === 1 ? 'карточка' : n >= 2 && n <= 4 ? 'карточки' : 'карточек';
+      cardCountBadge.textContent = `${n} ${word}`;
+    }
+
     pushHistory();
     scheduleSave({ silent: true });
     showToast('Карточка удалена');
@@ -1537,6 +1554,21 @@ export function initCardConstructor(root: HTMLElement): () => void {
     });
 
     selectRowField('title');
+    // Синхронизация темы карточки в модалке
+    const cardThemeVal = cards[index].theme && cards[index].theme !== 'default' ? cards[index].theme : 'default';
+    let cardThemeLbl = 'По умолчанию';
+    if (cards[index].theme && cards[index].theme !== 'default') {
+      for (const g of THEME_GROUPS) {
+        for (const t of g.themes) {
+          if (t.value === cardThemeVal) { cardThemeLbl = t.label; break; }
+        }
+      }
+    }
+    if (modalCardThemeLabel) modalCardThemeLabel.textContent = cardThemeLbl;
+    modalCardThemeDropdown?.querySelectorAll<HTMLElement>('.modal-card-theme-item').forEach((item) => {
+      item.classList.toggle('selected', item.dataset.modalCardTheme === cardThemeVal);
+    });
+
     // Синхронизация ползунка размера фигуры нумерации
     const savedNumSize = cards[index].colors?.listNumSize;
     if (listNumSizeSlider) listNumSizeSlider.value = String(savedNumSize || 22);
@@ -2206,15 +2238,33 @@ export function initCardConstructor(root: HTMLElement): () => void {
 
     // Кнопки сайдбара
     addCardBtn?.addEventListener('click', addCard);
-    saveChangesBtn?.addEventListener('click', () => saveCardsToLocalStorage({ silent: false }));
     saveAllBtn?.addEventListener('click', downloadAllPng);
-    exportJsonBtn?.addEventListener('click', exportJSON);
-    importJsonBtn?.addEventListener('click', () => importJsonInput?.click());
-    importJsonInput?.addEventListener('change', (e) => {
-      const f = (e.target as HTMLInputElement).files?.[0];
-      if (f) importJSON(f);
-      (e.target as HTMLInputElement).value = '';
+
+    // Удалить все — с подтверждением
+    deleteAllBtn?.addEventListener('click', () => {
+      if (cards.length <= 1) {
+        showToast('Нельзя удалить единственную карточку');
+        return;
+      }
+      confirmOverlay?.classList.add('active');
     });
+    confirmCancel?.addEventListener('click', () => {
+      confirmOverlay?.classList.remove('active');
+    });
+    confirmOverlay?.addEventListener('click', (e) => {
+      if (e.target === confirmOverlay) confirmOverlay?.classList.remove('active');
+    });
+    confirmOk?.addEventListener('click', () => {
+      confirmOverlay?.classList.remove('active');
+      // Оставляем одну пустую карточку
+      cards = [createEmptyCard()];
+      renderEditor();
+      renderPreview();
+      pushHistory();
+      scheduleSave({ silent: true });
+      showToast('Все карточки удалены');
+    });
+
     undoBtn?.addEventListener('click', undo);
     redoBtn?.addEventListener('click', redo);
 
@@ -2396,6 +2446,35 @@ export function initCardConstructor(root: HTMLElement): () => void {
       });
     });
 
+    // Тема карточки в модалке стилей
+    modalCardThemeTrigger?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      modalCardThemeDropdown?.classList.toggle('open');
+    });
+    modalCardThemeDropdown?.querySelectorAll<HTMLElement>('.theme-group-header').forEach((header) => {
+      header.addEventListener('click', (e) => {
+        e.stopPropagation();
+        header.closest('.theme-group')?.classList.toggle('expanded');
+      });
+    });
+    modalCardThemeDropdown?.querySelectorAll<HTMLElement>('.modal-card-theme-item').forEach((item) => {
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (activeCardIndexForColors === null) return;
+        const val = item.dataset.modalCardTheme || 'default';
+        const label = item.dataset.label || 'По умолчанию';
+        cards[activeCardIndexForColors].theme = val === 'default' ? undefined : val;
+        if (modalCardThemeLabel) modalCardThemeLabel.textContent = label;
+        modalCardThemeDropdown?.querySelectorAll('.modal-card-theme-item').forEach((it) => {
+          it.classList.toggle('selected', it === item);
+        });
+        modalCardThemeDropdown?.classList.remove('open');
+        updateCardTheme(activeCardIndexForColors);
+        pushHistory();
+        scheduleSave({ silent: true });
+      });
+    });
+
     // Сброс всех цветов
     resetCardColorsBtn?.addEventListener('click', () => {
       if (activeCardIndexForColors === null) return;
@@ -2511,6 +2590,10 @@ export function initCardConstructor(root: HTMLElement): () => void {
       editorCardsList?.querySelectorAll('.theme-dropdown.open').forEach((d) => {
         if (!d.contains(t)) d.classList.remove('open');
       });
+      // Закрытие modal card theme dropdown при клике вне
+      if (modalCardThemeDropdown?.classList.contains('open') && !modalCardThemeDropdown.contains(t)) {
+        modalCardThemeDropdown.classList.remove('open');
+      }
 
       if (!wordStylePopup?.classList.contains('active')) return;
       if (wordStylePopup.contains(t)) return;

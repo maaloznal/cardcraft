@@ -163,8 +163,6 @@
     // 14. Экспорт/импорт кнопки имеют SVG (не эмодзи)
     assert('Undo имеет SVG', !!q('#undoBtn svg'));
     assert('Redo имеет SVG', !!q('#redoBtn svg'));
-    assert('Export имеет SVG', !!q('#exportJsonBtn svg'));
-    assert('Import имеет SVG', !!q('#importJsonBtn svg'));
 
     // 15. Удаление карточки
     before = qa('.card').length;
