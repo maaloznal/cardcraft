@@ -252,14 +252,17 @@
 
     // 20. БАГ#1: Стили progress bar
     assert('Select стиля progress bar существует', !!q('#progressBarStyleSelect'));
-    var pbStyles = ['default','thin','glow','dots','gradient','hidden'];
+    var pbStyles = ['default','thin','thick','dashed','dots','squares','gradient','glow','minimal'];
     pbStyles.forEach(function(s) {
       q('#progressBarStyleSelect').value = s;
       q('#progressBarStyleSelect').dispatchEvent(new Event('change', {bubbles: true}));
       assert('Progress стиль ' + s, q('.cc-root').getAttribute('data-progress-style') === s);
     });
-    // Hidden — progress скрыт
-    assert('Progress hidden скрывает элемент', getComputedStyle(q('.progress')).display === 'none');
+    // Toggle — progress скрыт
+    q('#progressBarToggle').click();
+    assert('Progress toggle скрывает элемент', q('.cc-root').classList.contains('no-progress-bar'));
+    q('#progressBarToggle').click();
+    assert('Progress toggle показывает элемент', !q('.cc-root').classList.contains('no-progress-bar'));
     // Вернём default
     q('#progressBarStyleSelect').value = 'default';
     q('#progressBarStyleSelect').dispatchEvent(new Event('change', {bubbles: true}));
@@ -280,13 +283,13 @@
     assert('Num badge существует', !!q('.card-editor-num-badge'));
     assert('Num badge показывает номер', /^\d+$/.test(q('.card-editor-num-badge')?.textContent || ''));
     var h3 = q('.card-editor-title-group h3');
-    assert('H3 показывает какой-то текст', !!h3?.textContent?.trim());
-    // Введём title и проверим обновление
+    assert('H3 показывает техническое название', h3?.textContent?.startsWith('Карточка'));
+    // Название не зависит от заголовка
     var titleForId = qa('input[data-field="title"]')[0];
     if (titleForId) {
       titleForId.value = 'Тест идентификации';
       titleForId.dispatchEvent(new Event('input', {bubbles: true}));
-      assert('H3 обновился', q('.card-editor-title-group h3')?.textContent === 'Тест идентификации');
+      assert('H3 не копирует заголовок', q('.card-editor-title-group h3')?.textContent?.startsWith('Карточка'));
     }
 
     // 23. БАГ#2: Точки в нумерации списков

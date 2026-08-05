@@ -845,3 +845,67 @@ Stage Summary:
 - All 12 UX/UI revision points implemented.
 - Editor is cleaner, faster, more professional.
 - 107/107 tests pass, zero regressions.
+
+---
+Task ID: 20
+Agent: main
+Task: Final UX/UI polish — 3 bugs + 5 improvements.
+
+Work Log:
+
+БАГ#1 — Card title no longer duplicates content:
+- Changed cardTitlePreview from card.title to fixed `Карточка ${index + 1}`.
+- Removed title input handler that updated h3 with card title.
+- Card names are now purely technical: "Карточка 1", "Карточка 2", etc.
+
+БАГ#2 — Delete from both editor and preview:
+- Delete button in card-editor-block already existed (data-action="delete").
+- Delete button in preview already existed (data-action="delete-preview").
+- Verified both work with 2+ cards.
+
+БАГ#3 — Control sizes fixed:
+- Added max-width: 220px to .gradient-angle-slider.
+- Added max-width: 220px + margin: 0 auto to .btn-card-editor-palette.
+- Controls no longer stretch with panel width.
+
+Улучшение#1 — Theme groups merged:
+- Merged "Оригинальные светлые" + "Новые светлые" → "Светлые темы" (29 themes).
+- Merged "Оригинальные тёмные" + "Новые тёмные" → "Тёмные темы" (19 themes).
+- "Градиентные темы" unchanged (40 themes).
+- Total: 3 groups, 88 themes.
+- Both global and per-card theme dropdowns use same THEME_GROUPS.
+
+Улучшение#2 — New section order:
+- Reordered: 1.Формат, 2.Тема оформления, 3.Угол градиента, 4.Стиль списков, 5.Шкала прогресса.
+- Removed "Отображение" section completely.
+
+Улучшение#3 — Numbering moved to list section:
+- Moved numberingToggle into "Стиль списков" accordion.
+- "Отображение" section deleted.
+
+Улучшение#4 — Diverse progress bar styles:
+- 9 distinct styles: default (solid), thin, thick, dashed, dots (circles), squares, gradient, glow, minimal (dot indicator).
+- Each visually distinct: different heights, patterns, backgrounds.
+
+Улучшение#5 — Separate progress toggle:
+- Added #progressBarToggle switch (show/hide progress bar).
+- showProgressBar state, applyProgressBarVisibility() toggles .no-progress-bar class.
+- When off: .progress display:none.
+- When on: style select controls appearance.
+- Persisted to localStorage.
+
+Verification (111/111 tests pass):
+- Card title: "Карточка 1" (not title content).
+- Delete in both editor and preview.
+- Slider maxWidth 220px, palette maxWidth 220px.
+- 3 theme groups: Светлые, Тёмные, Градиентные.
+- Section order: Формат, Тема, Градиент, Списки, Прогресс.
+- "Отображение" gone, numbering in "Стиль списков".
+- 9 progress bar styles all apply correctly.
+- Progress toggle shows/hides bar.
+- 0 browser errors, 0 console errors, lint clean.
+
+Stage Summary:
+- All 8 polish items completed.
+- 111/111 tests pass, zero regressions.
+- Interface is cleaner, simpler, more logical.

@@ -95,6 +95,27 @@ export default function Home() {
         {/* Sidebar */}
         <aside className="editor-sidebar collapsed" id="editorSidebar">
           <div className="sidebar-fixed-header">
+
+          {/* 1. Формат */}
+          <div className="sidebar-accordion" data-sidebar-accordion>
+            <button className="sidebar-accordion-header" type="button" data-sidebar-toggle>
+              <span>Формат</span>
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div className="sidebar-accordion-body">
+            <div className="sidebar-section">
+            <select id="formatSelect" defaultValue="auto">
+              {FORMATS.map((f) => (
+                <option key={f.value} value={f.value}>
+                  {f.label}
+                </option>
+              ))}
+            </select>
+            </div>
+            </div>
+          </div>
+
+          {/* 2. Тема оформления */}
           <div className="sidebar-accordion" data-sidebar-accordion>
             <button className="sidebar-accordion-header" type="button" data-sidebar-toggle>
               <span>Тема оформления</span>
@@ -148,24 +169,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="sidebar-accordion" data-sidebar-accordion>
-            <button className="sidebar-accordion-header" type="button" data-sidebar-toggle>
-              <span>Формат</span>
-              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-            </button>
-            <div className="sidebar-accordion-body">
-            <div className="sidebar-section">
-            <select id="formatSelect" defaultValue="auto">
-              {FORMATS.map((f) => (
-                <option key={f.value} value={f.value}>
-                  {f.label}
-                </option>
-              ))}
-            </select>
-            </div>
-            </div>
-          </div>
-
+          {/* 3. Угол градиента */}
           <div className="sidebar-accordion" data-sidebar-accordion>
             <button className="sidebar-accordion-header" type="button" data-sidebar-toggle>
               <span>Угол градиента</span>
@@ -188,25 +192,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="sidebar-accordion" data-sidebar-accordion>
-            <button className="sidebar-accordion-header" type="button" data-sidebar-toggle>
-              <span>Шкала прогресса</span>
-              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-            </button>
-            <div className="sidebar-accordion-body">
-            <div className="sidebar-section">
-            <select id="progressBarStyleSelect" defaultValue="default">
-              <option value="default">Стандартная</option>
-              <option value="thin">Тонкая</option>
-              <option value="glow">Светящаяся</option>
-              <option value="dots">Точечная</option>
-              <option value="gradient">Градиентная</option>
-              <option value="hidden">Скрыть</option>
-            </select>
-            </div>
-            </div>
-          </div>
-
+          {/* 4. Стиль списков (включая нумерацию карточек) */}
           <div className="sidebar-accordion" data-sidebar-accordion>
             <button className="sidebar-accordion-header" type="button" data-sidebar-toggle>
               <span>Стиль списков</span>
@@ -223,16 +209,7 @@ export default function Home() {
               <option value="decorative">Декоративные маркеры</option>
             </select>
             </div>
-            </div>
-          </div>
-
-          <div className="sidebar-accordion" data-sidebar-accordion>
-            <button className="sidebar-accordion-header" type="button" data-sidebar-toggle>
-              <span>Отображение</span>
-              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-            </button>
-            <div className="sidebar-accordion-body">
-            <div className="sidebar-section display-options-section">
+            <div className="sidebar-section">
             <div className="toggle-row">
               <span className="toggle-label">Нумерация карточек</span>
               <label className="switch">
@@ -243,6 +220,37 @@ export default function Home() {
             </div>
             </div>
           </div>
+
+          {/* 5. Шкала прогресса (стиль + переключатель) */}
+          <div className="sidebar-accordion" data-sidebar-accordion>
+            <button className="sidebar-accordion-header" type="button" data-sidebar-toggle>
+              <span>Шкала прогресса</span>
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div className="sidebar-accordion-body">
+            <div className="sidebar-section">
+            <div className="toggle-row" style={{ marginBottom: 10 }}>
+              <span className="toggle-label">Показывать шкалу</span>
+              <label className="switch">
+                <input type="checkbox" id="progressBarToggle" defaultChecked />
+                <span className="switch-slider" />
+              </label>
+            </div>
+            <select id="progressBarStyleSelect" defaultValue="default">
+              <option value="default">Сплошная линия</option>
+              <option value="thin">Тонкая линия</option>
+              <option value="thick">Толстая линия</option>
+              <option value="dashed">Пунктирная</option>
+              <option value="dots">Круглые индикаторы</option>
+              <option value="squares">Квадратные индикаторы</option>
+              <option value="gradient">Градиентная</option>
+              <option value="glow">Светящаяся</option>
+              <option value="minimal">Минималистичная</option>
+            </select>
+            </div>
+            </div>
+          </div>
+
           </div>
 
           {/* Вертикальный разделитель между верхней и нижней областью */}

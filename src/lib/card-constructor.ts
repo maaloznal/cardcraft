@@ -45,7 +45,7 @@ interface Snapshot {
 /* ============================ ТЕМЫ ============================ */
 export const THEME_GROUPS: { label: string; themes: { value: string; label: string }[] }[] = [
   {
-    label: 'Оригинальные светлые',
+    label: 'Светлые темы',
     themes: [
       { value: 'default', label: '1. Clean Minimal (Notion / Apple)' },
       { value: 'editorial-paper', label: '2. Editorial Warm Paper' },
@@ -53,18 +53,6 @@ export const THEME_GROUPS: { label: string; themes: { value: string; label: stri
       { value: 'fresh-mint', label: '4. Fresh Sage Mint' },
       { value: 'warm-peach', label: '5. Warm Peach Sunset' },
       { value: 'neo-brutalist', label: '6. Neo-Brutalist' },
-    ],
-  },
-  {
-    label: 'Оригинальные тёмные',
-    themes: [
-      { value: 'dark-slate', label: '7. Dark Slate Cyan' },
-      { value: 'obsidian-gold', label: '8. Obsidian Gold' },
-    ],
-  },
-  {
-    label: 'Новые светлые (9–31)',
-    themes: [
       { value: 'ocean-breeze', label: '9. Ocean Breeze' },
       { value: 'golden-hour', label: '10. Golden Hour' },
       { value: 'rose-quartz', label: '11. Rose Quartz' },
@@ -91,8 +79,10 @@ export const THEME_GROUPS: { label: string; themes: { value: string; label: stri
     ],
   },
   {
-    label: 'Новые тёмные (32–48)',
+    label: 'Тёмные темы',
     themes: [
+      { value: 'dark-slate', label: '7. Dark Slate Cyan' },
+      { value: 'obsidian-gold', label: '8. Obsidian Gold' },
       { value: 'midnight-plum', label: '32. Midnight Plum' },
       { value: 'forest-canopy', label: '33. Forest Canopy' },
       { value: 'charcoal-crimson', label: '34. Charcoal & Crimson' },
@@ -113,7 +103,7 @@ export const THEME_GROUPS: { label: string; themes: { value: string; label: stri
     ],
   },
   {
-    label: 'Градиентные (49–88)',
+    label: 'Градиентные темы',
     themes: [
       { value: 'grad-aurora', label: '49. Aurora' },
       { value: 'grad-sunset-glow', label: '50. Sunset Glow' },
@@ -321,6 +311,7 @@ export function initCardConstructor(root: HTMLElement): () => void {
   const gradientAngleSlider = $<HTMLInputElement>('#gradientAngleSlider');
   const gradientAngleValue = $<HTMLElement>('#gradientAngleValue');
   const numberingToggle = $<HTMLInputElement>('#numberingToggle');
+  const progressBarToggle = $<HTMLInputElement>('#progressBarToggle');
   const progressBarStyleSelect = $<HTMLSelectElement>('#progressBarStyleSelect');
   const listStyleSelect = $<HTMLSelectElement>('#listStyleSelect');
   const listNumSizeSlider = $<HTMLInputElement>('#listNumSizeSlider');
@@ -361,7 +352,8 @@ export function initCardConstructor(root: HTMLElement): () => void {
   let currentFormat = 'auto';
   let gradientAngle = 135; // угол градиента для градиентных тем (0-360)
   let showCardNumbers = true; // Task 7: отображение нумерации карточек
-  let progressBarStyle = 'default'; // БАГ#1: стиль шкалы прогресса (default/thin/glow/dots/gradient/hidden)
+  let showProgressBar = true; // Улучшение#5: отдельный переключатель шкалы прогресса
+  let progressBarStyle = 'default'; // стиль шкалы прогресса
   let listStyleType = 'numbers'; // Task 9: стиль списков (numbers/bullets/dashes/circles/squares/decorative)
   let activeCardIndexForColors: number | null = null;
   let lastActiveField = 'title';
@@ -450,6 +442,7 @@ export function initCardConstructor(root: HTMLElement): () => void {
         localStorage.setItem('flashcard-theme', currentTheme);
         localStorage.setItem('flashcard-format', currentFormat);
         localStorage.setItem('flashcard-show-numbers', String(showCardNumbers));
+        localStorage.setItem('flashcard-show-progress', String(showProgressBar));
         localStorage.setItem('flashcard-progress-style', progressBarStyle);
         localStorage.setItem('flashcard-list-style', listStyleType);
         localStorage.setItem('flashcard-gradient-angle', String(gradientAngle));
@@ -475,6 +468,7 @@ export function initCardConstructor(root: HTMLElement): () => void {
     const savedTheme = localStorage.getItem('flashcard-theme');
     const savedFormat = localStorage.getItem('flashcard-format');
     const savedShowNumbers = localStorage.getItem('flashcard-show-numbers');
+    const savedShowProgress = localStorage.getItem('flashcard-show-progress');
     const savedProgressBarStyle = localStorage.getItem('flashcard-progress-style');
     const savedListStyle = localStorage.getItem('flashcard-list-style');
     const savedGradientAngle = localStorage.getItem('flashcard-gradient-angle');
@@ -503,6 +497,10 @@ export function initCardConstructor(root: HTMLElement): () => void {
       showCardNumbers = savedShowNumbers === 'true';
       if (numberingToggle) numberingToggle.checked = showCardNumbers;
     }
+    if (savedShowProgress !== null) {
+      showProgressBar = savedShowProgress === 'true';
+      if (progressBarToggle) progressBarToggle.checked = showProgressBar;
+    }
     if (savedProgressBarStyle) {
       progressBarStyle = savedProgressBarStyle;
       if (progressBarStyleSelect) progressBarStyleSelect.value = savedProgressBarStyle;
@@ -518,6 +516,7 @@ export function initCardConstructor(root: HTMLElement): () => void {
     }
     applyThemeToWorkspace();
     applyNumberingVisibility();
+    applyProgressBarVisibility();
     applyListStyle();
     applyProgressBarStyle();
   }
@@ -699,7 +698,11 @@ export function initCardConstructor(root: HTMLElement): () => void {
     root.classList.toggle('no-card-numbers', !showCardNumbers);
   }
 
-  /* ---------- БАГ#1: Применение стиля шкалы прогресса ---------- */
+  /* ---------- Применение видимости и стиля шкалы прогресса ---------- */
+  function applyProgressBarVisibility(): void {
+    if (!root) return;
+    root.classList.toggle('no-progress-bar', !showProgressBar);
+  }
   function applyProgressBarStyle(): void {
     if (!root) return;
     root.setAttribute('data-progress-style', progressBarStyle);
@@ -740,7 +743,7 @@ export function initCardConstructor(root: HTMLElement): () => void {
       const block = document.createElement('div');
       block.className = 'card-editor-block';
 
-      const cardTitlePreview = card.title ? escapeHtml(card.title.length > 32 ? card.title.slice(0, 31) + '…' : card.title) : `Карточка ${index + 1}`;
+      const cardTitlePreview = `Карточка ${index + 1}`;
 
       block.innerHTML = `
         <div class="card-editor-header">
@@ -749,7 +752,7 @@ export function initCardConstructor(root: HTMLElement): () => void {
           </button>
           <div class="card-editor-title-group">
             <span class="card-editor-num-badge">${index + 1}</span>
-            <h3 title="${escapeHtml(card.title || `Карточка ${index + 1}`)}">${cardTitlePreview}</h3>
+            <h3 title="${cardTitlePreview}">${cardTitlePreview}</h3>
           </div>
           <div class="card-editor-actions">
             <button class="btn-icon" data-action="duplicate" data-index="${index}" title="Дублировать" aria-label="Дублировать"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
@@ -791,17 +794,6 @@ export function initCardConstructor(root: HTMLElement): () => void {
           pruneOrphanWordStyles(cards[idx]);
           // Оптимизация: точечное обновление вместо полной перестройки
           updatePreviewField(idx, field as string);
-          // Task 10: обновляем preview названия карточки в header при вводе title
-          if (field === 'title') {
-            const block = this.closest('.card-editor-block');
-            const h3 = block?.querySelector<HTMLElement>('.card-editor-title-group h3');
-            if (h3) {
-              const idx = Number(this.dataset.index);
-              const val = this.value || `Карточка ${idx + 1}`;
-              h3.textContent = val.length > 32 ? val.slice(0, 31) + '…' : val;
-              h3.setAttribute('title', this.value || `Карточка ${idx + 1}`);
-            }
-          }
           scheduleSave({ silent: true });
           scheduleHistoryPush();
         });
@@ -1397,12 +1389,9 @@ export function initCardConstructor(root: HTMLElement): () => void {
       const badge = block.querySelector<HTMLElement>('.card-editor-num-badge');
       if (badge) badge.textContent = String(i + 1);
       const h3 = block.querySelector<HTMLElement>('.card-editor-title-group h3');
-      if (h3 && !h3.textContent?.startsWith('Карточка') === false) {
-        // Если показывается "Карточка N", обновляем номер
-        if (h3.textContent?.startsWith('Карточка ')) {
-          h3.textContent = `Карточка ${i + 1}`;
-          h3.setAttribute('title', `Карточка ${i + 1}`);
-        }
+      if (h3) {
+        h3.textContent = `Карточка ${i + 1}`;
+        h3.setAttribute('title', `Карточка ${i + 1}`);
       }
       // Обновляем data-index на всех кнопках и полях
       block.querySelectorAll<HTMLElement>('[data-index]').forEach((el) => {
@@ -2168,7 +2157,14 @@ export function initCardConstructor(root: HTMLElement): () => void {
       scheduleSave({ silent: true });
     });
 
-    // БАГ#1: Выбор стиля шкалы прогресса
+    // Улучшение#5: Переключатель видимости шкалы прогресса
+    progressBarToggle?.addEventListener('change', function () {
+      showProgressBar = this.checked;
+      applyProgressBarVisibility();
+      scheduleSave({ silent: true });
+    });
+
+    // Выбор стиля шкалы прогресса
     progressBarStyleSelect?.addEventListener('change', function () {
       progressBarStyle = this.value;
       applyProgressBarStyle();

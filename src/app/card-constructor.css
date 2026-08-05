@@ -1693,6 +1693,7 @@
 }
 .gradient-angle-slider {
   width: 100%;
+  max-width: 220px;
   height: 4px;
   -webkit-appearance: none;
   appearance: none;
@@ -2005,6 +2006,8 @@
   justify-content: center;
   gap: 6px;
   width: 100%;
+  max-width: 220px;
+  margin: 0 auto;
   height: 32px;
   background: var(--ui-bg);
   color: var(--ui-text);
@@ -3168,10 +3171,15 @@ input[type="color"].color-picker-input::-moz-color-swatch {
   display: none !important;
 }
 
-/* ============================ БАГ#1: Progress bar styles ============================ */
-/* Управление шкалой прогресса чтения через data-progress-style на root */
+/* ============================ Progress bar styles ============================ */
+/* Управление шкалой прогресса через data-progress-style на root + видимость через класс */
 
-/* default — стандартная полоса */
+/* Переключатель видимости */
+.cc-root.no-progress-bar .progress {
+  display: none !important;
+}
+
+/* default — сплошная линия */
 .cc-root[data-progress-style="default"] .progress {
   height: 4px;
   border-radius: 0;
@@ -3180,7 +3188,7 @@ input[type="color"].color-picker-input::-moz-color-swatch {
   border-radius: 0;
 }
 
-/* thin — тонкая элегантная */
+/* thin — тонкая линия */
 .cc-root[data-progress-style="thin"] .progress {
   height: 2px;
 }
@@ -3188,26 +3196,57 @@ input[type="color"].color-picker-input::-moz-color-swatch {
   border-radius: 2px;
 }
 
-/* glow — светящаяся */
-.cc-root[data-progress-style="glow"] .progress {
-  height: 4px;
+/* thick — толстая линия */
+.cc-root[data-progress-style="thick"] .progress {
+  height: 8px;
+  border-radius: 4px;
 }
-.cc-root[data-progress-style="glow"] .progress-fill {
-  border-radius: 2px;
-  box-shadow: 0 0 8px var(--accent-color), 0 0 4px var(--accent-glow);
+.cc-root[data-progress-style="thick"] .progress-fill {
+  border-radius: 4px;
 }
 
-/* dots — точечная */
-.cc-root[data-progress-style="dots"] .progress {
+/* dashed — пунктирная */
+.cc-root[data-progress-style="dashed"] .progress {
   height: 4px;
+  background: transparent;
+  border-top: 4px dashed var(--progress-bg);
+  border-radius: 0;
+}
+.cc-root[data-progress-style="dashed"] .progress-fill {
+  height: 4px;
+  border-top: 4px dashed var(--accent-color);
+  background: transparent !important;
+  box-shadow: none;
+}
+
+/* dots — круглые индикаторы */
+.cc-root[data-progress-style="dots"] .progress {
+  height: 8px;
   background: transparent;
   overflow: visible;
 }
 .cc-root[data-progress-style="dots"] .progress-fill {
-  height: 4px;
-  border-radius: 50%;
-  box-shadow: 0 0 0 0 var(--accent-color);
-  background: var(--accent-color);
+  height: 8px;
+  border-radius: 0;
+  background: transparent;
+  background-image: radial-gradient(circle, var(--accent-color) 3px, transparent 3px);
+  background-size: 12px 8px;
+  background-repeat: repeat-x;
+  box-shadow: none;
+}
+
+/* squares — квадратные индикаторы */
+.cc-root[data-progress-style="squares"] .progress {
+  height: 6px;
+  background: transparent;
+  overflow: visible;
+}
+.cc-root[data-progress-style="squares"] .progress-fill {
+  height: 6px;
+  border-radius: 0;
+  background: transparent;
+  background-image: repeating-linear-gradient(90deg, var(--accent-color) 0 4px, transparent 4px 10px);
+  box-shadow: none;
 }
 
 /* gradient — градиентная */
@@ -3220,9 +3259,36 @@ input[type="color"].color-picker-input::-moz-color-swatch {
   background: linear-gradient(90deg, var(--accent-color), var(--accent-glow), var(--accent-color));
 }
 
-/* hidden — скрытая (без пустого пространства) */
-.cc-root[data-progress-style="hidden"] .progress {
-  display: none !important;
+/* glow — светящаяся */
+.cc-root[data-progress-style="glow"] .progress {
+  height: 4px;
+}
+.cc-root[data-progress-style="glow"] .progress-fill {
+  border-radius: 2px;
+  box-shadow: 0 0 8px var(--accent-color), 0 0 4px var(--accent-glow);
+}
+
+/* minimal — минималистичный (только точка) */
+.cc-root[data-progress-style="minimal"] .progress {
+  height: 4px;
+  background: transparent;
+  overflow: visible;
+}
+.cc-root[data-progress-style="minimal"] .progress-fill {
+  height: 4px;
+  background: transparent;
+  position: relative;
+}
+.cc-root[data-progress-style="minimal"] .progress-fill::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-color);
 }
 
 /* ============================ TASK 9: List styles ============================ */
