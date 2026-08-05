@@ -1463,76 +1463,12 @@ export function initCardConstructor(root: HTMLElement): () => void {
 
   function deleteCard(idx: number): void {
     if (cards.length <= 1) return;
-    const cardId = cards[idx].id;
+    if (idx < 0 || idx >= cards.length) return;
     cards.splice(idx, 1);
-
-    // Локализованное удаление — убираем только DOM-узлы этой карточки
-    // 1. Удаляем card-wrapper из превью
-    const previewNode = document.getElementById(`card-node-${cardId}`);
-    previewNode?.closest('.card-wrapper')?.remove();
-
-    // 2. Удаляем card-editor-block из редактора
-    const editorBlock = editorCardsList?.querySelector<HTMLElement>(
-      `.card-editor-block .btn-icon[data-action="delete"][data-index="${idx}"]`,
-    )?.closest('.card-editor-block');
-    editorBlock?.remove();
-
-    // 3. Обновляем номера оставшихся карточек в редакторе
-    editorCardsList?.querySelectorAll<HTMLElement>('.card-editor-block').forEach((block, i) => {
-      const badge = block.querySelector<HTMLElement>('.card-editor-num-badge');
-      if (badge) badge.textContent = String(i + 1);
-      const h3 = block.querySelector<HTMLElement>('.card-editor-title-group h3');
-      if (h3) {
-        h3.textContent = `Карточка ${i + 1}`;
-        h3.setAttribute('title', `Карточка ${i + 1}`);
-      }
-      // Обновляем data-index на всех кнопках и полях
-      block.querySelectorAll<HTMLElement>('[data-index]').forEach((el) => {
-        el.dataset.index = String(i);
-      });
-      // Обновляем disabled state кнопок перемещения
-      const moveUp = block.querySelector<HTMLElement>('[data-action="move"][data-dir="-1"]');
-      const moveDown = block.querySelector<HTMLElement>('[data-action="move"][data-dir="1"]');
-      if (moveUp) moveUp.toggleAttribute('disabled', i === 0);
-      if (moveDown) moveDown.toggleAttribute('disabled', i === cards.length - 1);
-      // Скрываем/показываем кнопку удаления
-      const delBtn = block.querySelector<HTMLElement>('[data-action="delete"]');
-      if (delBtn) delBtn.style.display = cards.length > 1 ? '' : 'none';
-    });
-
-    // 4. Обновляем номера тегов и прогресс-бары в превью
-    cardsArea?.querySelectorAll<HTMLElement>('.card').forEach((cardNode, i) => {
-      const tag = cardNode.querySelector<HTMLElement>('.tag span');
-      if (tag) {
-        const cardNum = String(i + 1).padStart(2, '0');
-        const totalNum = String(cards.length).padStart(2, '0');
-        tag.textContent = `${cardNum} / ${totalNum}`;
-      }
-      // Перестраиваем прогресс-бар
-      const oldProgress = cardNode.querySelector<HTMLElement>('.progress');
-      if (oldProgress) {
-        const newProgressHtml = buildProgressBarHtml(i, cards.length);
-        const temp = document.createElement('div');
-        temp.innerHTML = newProgressHtml;
-        const newProgress = temp.firstElementChild;
-        if (newProgress) oldProgress.replaceWith(newProgress);
-      }
-      // Обновляем data-index на data-field элементах
-      cardNode.querySelectorAll<HTMLElement>('[data-index]').forEach((el) => {
-        el.dataset.index = String(i);
-      });
-      // Обновляем delete-preview data-index
-      const delPreview = cardNode.parentElement?.querySelector<HTMLElement>('[data-action="delete-preview"]');
-      if (delPreview) delPreview.dataset.index = String(i);
-    });
-
-    // 5. Обновляем счётчик
-    if (cardCountBadge) {
-      const n = cards.length;
-      const word = n === 1 ? 'карточка' : n >= 2 && n <= 4 ? 'карточки' : 'карточек';
-      cardCountBadge.textContent = `${n} ${word}`;
-    }
-
+    // Полная перестройка редактора и превью — гарантирует синхронизацию
+    // data-index, обработчиков и массива cards
+    renderEditor();
+    renderPreview();
     pushHistory();
     scheduleSave({ silent: true });
     showToast('Карточка удалена');

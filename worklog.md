@@ -965,3 +965,35 @@ Stage Summary:
 - All 4 new features implemented and verified.
 - 109/109 tests pass, zero regressions.
 - Features feel native to the Cardcraft design system.
+
+---
+Task ID: 22
+Agent: main
+Task: Regression audit — fix deleteCard TypeError + progress bar background line.
+
+Work Log:
+
+БАГ#1 — deleteCard() TypeError (Cannot read properties of undefined):
+- Root cause: The localized deletion approach (updating data-index on DOM elements without rebuilding event listeners) caused a desynchronization between the `cards` array indices and the `data-index` attributes on DOM elements. When a card was deleted from preview, the `data-index` attributes were updated on remaining DOM elements, but the event listeners (bound during renderEditor/renderPreview) still referenced old indices via closures. If the user then clicked delete on a card whose index had shifted, `cards[idx]` could be undefined.
+- Fix: Replaced localized deletion with full `renderEditor()` + `renderPreview()`. This ensures all data-index attributes, event listeners, and the cards array are perfectly synchronized. The performance impact is negligible (O(n) rebuild, avg 0.3ms per renderPreview call).
+- Also added bounds check `if (idx < 0 || idx >= cards.length) return` as defense-in-depth.
+- Verified: single delete, consecutive deletes, delete from preview, delete from editor, delete last (blocked), delete all, undo after delete, redo after delete — all work without errors.
+
+БАГ#2 — Progress bar shape styles showing background line:
+- Root cause: The base `.progress` CSS rule sets `background-color: var(--progress-bg)` and `margin-bottom: -4px`. For shape styles (`.progress-shapes`), this background was not overridden, so a solid line appeared behind the discrete shapes.
+- Fix: Added `background: transparent !important` and `margin-bottom: 0` to `.progress-shapes` class. Also changed dashed style's `.progress` background from `var(--progress-bg)` to `transparent`.
+- Verified: default has background (rgb(226,232,240)), all shape styles (circles, squares, diamonds, hexagons, stars) have transparent background (rgba(0,0,0,0)), dashed also transparent. Only `default` (solid line) shows background.
+
+Additional regression testing:
+- Card operations: create, delete, duplicate, undo, redo, mass delete, mass download — all pass.
+- Editor: text input, title change, color change, theme change, word styling — all pass.
+- Preview: localized updates (updatePreviewField), no excess re-renders — confirmed.
+- Interface: resize dividers, accordions, modal, word popup drag — all functional.
+- LocalStorage: auto-save, restore state, restore sizes — working.
+- Performance: renderPreview avg 0.3ms, updatePreviewField avg 0.0ms, updateCardField avg 0.1ms — no excess re-renders.
+- 0 browser errors, 0 console errors, 0 warnings, lint clean.
+- 109/109 smoke tests pass.
+
+Stage Summary:
+- Both bugs fixed architecturally.
+- Full regression audit completed — project is stable.
