@@ -1,23 +1,38 @@
 /**
  * StyleHelpers — pure functions for building inline styles and word styling.
  * No DOM access, no side effects.
+ *
+ * All CSS values are sanitized via validation module to prevent CSS injection.
  */
 
-import type { Card, WordStyle, SectionStyle } from '../core/types';
+import type { Card, WordStyle } from '../core/types';
 import { escapeHtml, isWordChar, splitOnce } from '../core/utils';
+import {
+  sanitizeHexColor,
+  sanitizeFontWeight,
+  sanitizeFontStyle,
+  sanitizeTextDecoration,
+  clampFontSize,
+  clampListNumSize,
+} from '../core/validation';
 
 /** Build inline style string for a section field (color, fontWeight, fontSize, etc.) */
 export function buildSectionStyle(card: Card, field: string): string {
   const c = card.colors || {};
   const s = card.sectionStyles || {};
   let styleStr = '';
-  if (c[field]) styleStr += `color:${escapeHtml(c[field])} !important;`;
+  const colorHex = sanitizeHexColor(c[field]);
+  if (colorHex) styleStr += `color:${colorHex} !important;`;
   const ss = s[field];
   if (ss) {
-    if (ss.fontSize) styleStr += `font-size:${ss.fontSize}px;`;
-    if (ss.fontWeight) styleStr += `font-weight:${ss.fontWeight};`;
-    if (ss.fontStyle) styleStr += `font-style:${ss.fontStyle};`;
-    if (ss.textDecoration) styleStr += `text-decoration:${ss.textDecoration};`;
+    const fontSize = clampFontSize(ss.fontSize, 16);
+    if (ss.fontSize !== undefined) styleStr += `font-size:${fontSize}px;`;
+    const fw = sanitizeFontWeight(ss.fontWeight);
+    if (fw) styleStr += `font-weight:${fw};`;
+    const fst = sanitizeFontStyle(ss.fontStyle);
+    if (fst) styleStr += `font-style:${fst};`;
+    const td = sanitizeTextDecoration(ss.textDecoration);
+    if (td) styleStr += `text-decoration:${td};`;
   }
   return styleStr ? `style="${styleStr}"` : '';
 }
@@ -26,10 +41,16 @@ export function buildSectionStyle(card: Card, field: string): string {
 export function buildListNumStyle(card: Card): string {
   const c = card.colors || {};
   const vars: string[] = [];
-  if (c.listNumber) vars.push(`--num-color:${escapeHtml(c.listNumber)}`);
-  if (c.listNumBg) vars.push(`--num-bg:${escapeHtml(c.listNumBg)}`);
-  if (c.listNumBorder) vars.push(`--num-border:${escapeHtml(c.listNumBorder)}`);
-  if (c.listNumSize) vars.push(`--num-size:${escapeHtml(c.listNumSize)}px`);
+  const numColor = sanitizeHexColor(c.listNumber);
+  if (numColor) vars.push(`--num-color:${numColor}`);
+  const numBg = sanitizeHexColor(c.listNumBg);
+  if (numBg) vars.push(`--num-bg:${numBg}`);
+  const numBorder = sanitizeHexColor(c.listNumBorder);
+  if (numBorder) vars.push(`--num-border:${numBorder}`);
+  if (c.listNumSize !== undefined) {
+    const size = clampListNumSize(c.listNumSize, 22);
+    vars.push(`--num-size:${size}px`);
+  }
   return vars.length ? `style="${vars.join(';')}"` : '';
 }
 
@@ -42,7 +63,7 @@ export function applyWordStylesToText(
   if (!text) return '';
   if (!wordStyles || Object.keys(wordStyles).length === 0) return escapeHtml(text);
 
-  // Collect applicable styles
+  // Collect applicable styles — sanitize each CSS value
   const applicable: { word: string; styleStr: string }[] = [];
   Object.keys(wordStyles).forEach((key) => {
     const [kf, word] = splitOnce(key, '::');
@@ -50,11 +71,18 @@ export function applyWordStylesToText(
     if (keyField !== field && keyField !== '*') return;
     const styles = wordStyles[key];
     let styleStr = '';
-    if (styles.fontWeight) styleStr += `font-weight:${styles.fontWeight};`;
-    if (styles.fontStyle) styleStr += `font-style:${styles.fontStyle};`;
-    if (styles.textDecoration) styleStr += `text-decoration:${styles.textDecoration};`;
-    if (styles.fontSize) styleStr += `font-size:${styles.fontSize}px;`;
-    if (styles.color) styleStr += `color:${escapeHtml(styles.color)};`;
+    const fw = sanitizeFontWeight(styles.fontWeight);
+    if (fw) styleStr += `font-weight:${fw};`;
+    const fst = sanitizeFontStyle(styles.fontStyle);
+    if (fst) styleStr += `font-style:${fst};`;
+    const td = sanitizeTextDecoration(styles.textDecoration);
+    if (td) styleStr += `text-decoration:${td};`;
+    if (styles.fontSize !== undefined) {
+      const size = clampFontSize(styles.fontSize, 16);
+      styleStr += `font-size:${size}px;`;
+    }
+    const color = sanitizeHexColor(styles.color);
+    if (color) styleStr += `color:${color};`;
     if (styleStr && word) applicable.push({ word, styleStr });
   });
 
@@ -103,9 +131,20 @@ export function containsWholeWord(text: string, word: string): boolean {
   return false;
 }
 
-/** Remove word styles that no longer match any text in the card */
+/** Remove word styles that no longer match any text in the card.
+ *  Mutates the card in place — kept for backward compatibility.
+ *  Prefer findOrphanWordStyleKeys() + dispatch DELETE_CARD_WORD_STYLE. */
 export function pruneOrphanWordStyles(card: Card): boolean {
   if (!card.wordStyles) return false;
+  const orphans = findOrphanWordStyleKeys(card);
+  orphans.forEach((key) => delete card.wordStyles[key]);
+  return orphans.length > 0;
+}
+
+/** Find word style keys that no longer match any text in the card.
+ *  Pure function — does not mutate. Returns array of orphan keys. */
+export function findOrphanWordStyleKeys(card: Card): string[] {
+  if (!card.wordStyles || Object.keys(card.wordStyles).length === 0) return [];
   const fieldTexts: Record<string, string> = {
     title: card.title,
     subtitle: card.subtitle,
@@ -114,14 +153,13 @@ export function pruneOrphanWordStyles(card: Card): boolean {
     footer: card.footer,
     cta: card.cta,
   };
-  let changed = false;
+  const orphans: string[] = [];
   Object.keys(card.wordStyles).forEach((key) => {
     const [kf, word] = splitOnce(key, '::');
     const fieldText = fieldTexts[kf] ?? '';
     if (!word || !containsWholeWord(fieldText, word)) {
-      delete card.wordStyles[key];
-      changed = true;
+      orphans.push(key);
     }
   });
-  return changed;
+  return orphans;
 }

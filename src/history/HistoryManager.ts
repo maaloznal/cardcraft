@@ -12,8 +12,8 @@ export class HistoryManager<T> {
   private historyTimer: ReturnType<typeof setTimeout> | null = null;
   private maxHistory: number;
 
-  constructor(maxHistory = CONFIG.MAX_HISTORY) {
-    this.maxHistory = maxHistory;
+  constructor(maxHistory?: number) {
+    this.maxHistory = maxHistory ?? CONFIG.MAX_HISTORY;
   }
 
   /** Take an immediate snapshot. Cancels any pending debounced push. */
@@ -23,19 +23,25 @@ export class HistoryManager<T> {
       clearTimeout(this.historyTimer);
       this.historyTimer = null;
     }
+    // Truncate any redo entries (branch divergence)
     this.history = this.history.slice(0, this.histIndex + 1);
     this.history.push(deepClone(snapshot));
-    if (this.history.length > this.maxHistory) {
+    this.histIndex++;
+    // Enforce max history — remove oldest entry and keep histIndex in bounds
+    while (this.history.length > this.maxHistory) {
       this.history.shift();
-    } else {
-      this.histIndex++;
+      this.histIndex--; // The window slid left — adjust index to stay on same snapshot
     }
+    // Safety clamp: histIndex must always be within [0, length-1]
+    if (this.histIndex < 0) this.histIndex = 0;
+    if (this.histIndex >= this.history.length) this.histIndex = this.history.length - 1;
   }
 
   /** Debounced push — merges rapid changes into one snapshot */
-  schedulePush(snapshot: T, delay = CONFIG.HISTORY_DEBOUNCE_MS): void {
+  schedulePush(snapshot: T, delay?: number): void {
+    const ms = delay ?? CONFIG.HISTORY_DEBOUNCE_MS;
     if (this.historyTimer) clearTimeout(this.historyTimer);
-    this.historyTimer = setTimeout(() => this.push(snapshot), delay);
+    this.historyTimer = setTimeout(() => this.push(snapshot), ms);
   }
 
   /** Undo — returns previous snapshot or null. Cancels any pending debounced push. */

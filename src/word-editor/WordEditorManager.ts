@@ -12,7 +12,7 @@
  */
 
 import type { WordStyle, Card } from '../core/types';
-import { escapeHtml, splitOnce, stripMeta } from '../core/utils';
+import { escapeHtml, splitOnce } from '../core/utils';
 import { FIELD_LABELS } from '../core/constants';
 
 type StyleChangeHandler = (
@@ -41,6 +41,8 @@ export class WordEditorManager {
   private clearHandler: ClearHandler | null = null;
 
   private dragCleanup: (() => void) | null = null;
+  /** Tracked listeners for proper cleanup on destroy(). */
+  private trackedListeners: Array<{ target: EventTarget; type: string; fn: EventListenerOrEventListenerObject; opts?: boolean | AddEventListenerOptions }> = [];
 
   constructor(
     popup: HTMLElement,
@@ -205,7 +207,7 @@ export class WordEditorManager {
 
     // Format buttons
     root.querySelectorAll<HTMLElement>('.format-btn').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
+      const fn = (e: Event) => {
         e.stopPropagation();
         const fmt = btn.dataset.format || '';
         btn.classList.toggle('active');
@@ -220,46 +222,58 @@ export class WordEditorManager {
           this.activeWordStyles.textDecoration = active ? (d + ' line-through').trim() : d.replace('line-through', '').trim();
         }
         this.commitStyle();
-      });
+      };
+      btn.addEventListener('click', fn);
+      this.trackedListeners.push({ target: btn, type: 'click', fn });
     });
 
     // Size slider
-    this.sizeSlider.addEventListener('input', () => {
+    const sliderFn = () => {
       this.activeWordStyles.fontSize = Number(this.sizeSlider.value);
       this.sizeValue.textContent = `${this.sizeSlider.value}px`;
       this.commitStyle();
-    });
+    };
+    this.sizeSlider.addEventListener('input', sliderFn);
+    this.trackedListeners.push({ target: this.sizeSlider, type: 'input', fn: sliderFn });
 
     // Color presets
     root.querySelectorAll<HTMLElement>('.color-preset[data-color]').forEach((p) => {
-      p.addEventListener('click', (e) => {
+      const fn = (e: Event) => {
         e.stopPropagation();
         root.querySelectorAll<HTMLElement>('.color-preset').forEach((x) => x.classList.remove('active'));
         p.classList.add('active');
         this.activeWordStyles.color = p.dataset.color || '';
         this.commitStyle();
-      });
+      };
+      p.addEventListener('click', fn);
+      this.trackedListeners.push({ target: p, type: 'click', fn });
     });
 
     // Accordion sections
     root.querySelectorAll<HTMLElement>('.popup-section-title').forEach((title) => {
-      title.addEventListener('click', () => {
+      const fn = () => {
         title.closest('.popup-section')?.classList.toggle('collapsed');
-      });
+      };
+      title.addEventListener('click', fn);
+      this.trackedListeners.push({ target: title, type: 'click', fn });
     });
 
     // Clear button
     const clearBtn = this.popup.querySelector<HTMLElement>('#wordClearBtn');
-    clearBtn?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (this.activeCardIndex === null || !this.activeWordStyles.text || !this.activeField) return;
-      this.clearHandler?.(this.activeCardIndex, this.activeField, this.activeWordStyles.text);
-      // Reset active styles
-      this.activeWordStyles = { text: this.activeWordStyles.text };
-      this.syncFormatButtons();
-      this.syncColorPresets();
-      this.syncSizeSlider();
-    });
+    if (clearBtn) {
+      const fn = (e: Event) => {
+        e.stopPropagation();
+        if (this.activeCardIndex === null || !this.activeWordStyles.text || !this.activeField) return;
+        this.clearHandler?.(this.activeCardIndex, this.activeField, this.activeWordStyles.text);
+        // Reset active styles
+        this.activeWordStyles = { text: this.activeWordStyles.text };
+        this.syncFormatButtons();
+        this.syncColorPresets();
+        this.syncSizeSlider();
+      };
+      clearBtn.addEventListener('click', fn);
+      this.trackedListeners.push({ target: clearBtn, type: 'click', fn });
+    }
   }
 
   private initDrag(): void {
@@ -316,8 +330,13 @@ export class WordEditorManager {
     };
   }
 
-  /** Cleanup all listeners */
+  /** Cleanup all listeners — including initControls + drag */
   destroy(): void {
     if (this.dragCleanup) this.dragCleanup();
+    // Remove all tracked listeners from initControls
+    this.trackedListeners.forEach(({ target, type, fn, opts }) => {
+      target.removeEventListener(type, fn, opts);
+    });
+    this.trackedListeners = [];
   }
 }

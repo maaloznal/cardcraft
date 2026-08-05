@@ -23,7 +23,7 @@ import { EditorRenderer } from '@/editor/EditorRenderer';
 import { WordEditorManager } from '@/word-editor/WordEditorManager';
 import * as Theme from '@/themes/ThemeManager';
 import * as Export from '@/export/ExportManager';
-import { pruneOrphanWordStyles } from '@/styles/StyleHelpers';
+import { findOrphanWordStyleKeys } from '@/styles/StyleHelpers';
 import { SidebarAccordion, ModalAccordion } from '@/ui/Accordion';
 import { Modal } from '@/ui/Modal';
 import { Dropdown } from '@/ui/Dropdown';
@@ -444,15 +444,25 @@ export function initCardCraftApp(root: HTMLElement): () => void {
       const idx = Number(data.index);
       const field = String(data.field);
       const value = String(data.value);
+      // Dispatch through StateManager — single source of truth
+      stateManager.dispatch({ type: 'UPDATE_CARD_FIELD', payload: { idx, field: field as keyof Card, value } });
       const card = stateManager.getCard(idx);
       if (!card) return;
-      // Mutate card field directly (preserves O(1) update — no dispatch for typing)
-      (card as unknown as Record<string, unknown>)[field] = value;
-      const changed = pruneOrphanWordStyles(card);
-      previewRenderer.updateCardField(card, field, idx);
+      // Find orphan word styles (pure) and dispatch deletions — no direct mutation
+      const orphans = findOrphanWordStyleKeys(card);
+      let changed = false;
+      for (const key of orphans) {
+        stateManager.dispatch({ type: 'DELETE_CARD_WORD_STYLE', payload: { idx, key } });
+        changed = true;
+      }
+      const updatedCard = stateManager.getCard(idx);
+      if (updatedCard) {
+        previewRenderer.updateCardField(updatedCard, field, idx);
+      }
       updateCharCounter(idx);
       if (changed && activeCardIndexForWord === idx && activeFieldForWord === field) {
-        wordEditorManager.renderWordStyleList(card);
+        const c = stateManager.getCard(idx);
+        if (c) wordEditorManager.renderWordStyleList(c);
       }
       scheduleSave({ silent: true });
       scheduleHistoryPush();
@@ -665,6 +675,22 @@ export function initCardCraftApp(root: HTMLElement): () => void {
     activeCardIndexForWord = null;
   }
 
+  /** Close all open overlays (modal, word popup) and reset stale active indices.
+   *  Called before card mutations (delete, clear) and on undo/redo/restore
+   *  to prevent stale indices from pointing at wrong cards. */
+  function closeAllOverlaysOnCardMutation(): void {
+    if (colorModalController.isOpen) {
+      colorModalController.close();
+    }
+    if (wordEditorManager.isOpen) {
+      closeWordStylePopup();
+    }
+    // Reset stale indices regardless
+    activeCardIndexForColors = null;
+    activeCardIndexForWord = null;
+    activeFieldForWord = null;
+  }
+
   /* ---------- 17. Card operations ---------- */
   function addCard(): void {
     stateManager.dispatch({ type: 'ADD_CARD' });
@@ -677,7 +703,12 @@ export function initCardCraftApp(root: HTMLElement): () => void {
   }
 
   function deleteCard(idx: number): void {
+    // Guard against NaN, non-integer, out-of-bounds indices.
+    // NaN was previously passed to splice which treats NaN as 0, deleting the wrong card.
+    if (!Number.isInteger(idx) || idx < 0 || idx >= stateManager.getCardCount()) return;
     if (stateManager.getCardCount() <= 1) return;
+    // Close any open modal/popup before mutating cards to prevent stale active indices
+    closeAllOverlaysOnCardMutation();
     stateManager.dispatch({ type: 'DELETE_CARD', payload: idx });
     renderEditor();
     renderPreview();
@@ -714,6 +745,10 @@ export function initCardCraftApp(root: HTMLElement): () => void {
   }
 
   function restore(s: Snapshot): void {
+    // Close any open modal/popup before restoring — active indices become stale
+    // after restore replaces the cards array. Re-syncing modal state to restored
+    // card data would be complex; safer to close and let user reopen.
+    closeAllOverlaysOnCardMutation();
     stateManager.restore(s);
     renderEditor();
     renderPreview();
@@ -849,55 +884,66 @@ export function initCardCraftApp(root: HTMLElement): () => void {
     });
 
     // Char limit toggle
-    addEl(charLimitToggle, 'change', function () {
-      stateManager.dispatch({ type: 'SET_CHAR_LIMIT', payload: this.checked });
+    addEl(charLimitToggle, 'change', (e) => {
+      const target = e.target as HTMLInputElement;
+      stateManager.dispatch({ type: 'SET_CHAR_LIMIT', payload: target.checked });
       applyCharLimit();
       updateCharCounter(0);
       scheduleSave({ silent: true });
     });
 
     // Gradient angle slider — NO save, NO history (preserve old behavior)
-    addEl(gradientAngleSlider, 'input', function () {
-      const angle = Number(this.value);
+    addEl(gradientAngleSlider, 'input', (e) => {
+      const target = e.target as HTMLInputElement;
+      const angle = Number(target.value);
       stateManager.dispatch({ type: 'SET_GRADIENT_ANGLE', payload: angle });
     });
 
     // Numbering toggle
-    addEl(numberingToggle, 'change', function () {
-      stateManager.dispatch({ type: 'SET_SHOW_CARD_NUMBERS', payload: this.checked });
+    addEl(numberingToggle, 'change', (e) => {
+      const target = e.target as HTMLInputElement;
+      stateManager.dispatch({ type: 'SET_SHOW_CARD_NUMBERS', payload: target.checked });
       scheduleSave({ silent: true });
     });
 
     // Progress bar toggle
-    addEl(progressBarToggle, 'change', function () {
-      stateManager.dispatch({ type: 'SET_SHOW_PROGRESS_BAR', payload: this.checked });
+    addEl(progressBarToggle, 'change', (e) => {
+      const target = e.target as HTMLInputElement;
+      stateManager.dispatch({ type: 'SET_SHOW_PROGRESS_BAR', payload: target.checked });
       scheduleSave({ silent: true });
     });
 
     // Progress bar style select
-    addEl(progressBarStyleSelect, 'change', function () {
-      stateManager.dispatch({ type: 'SET_PROGRESS_BAR_STYLE', payload: this.value });
+    addEl(progressBarStyleSelect, 'change', (e) => {
+      const target = e.target as HTMLSelectElement;
+      stateManager.dispatch({ type: 'SET_PROGRESS_BAR_STYLE', payload: target.value });
       renderPreview();
       scheduleSave({ silent: true });
     });
 
     // List style select
-    addEl(listStyleSelect, 'change', function () {
-      stateManager.dispatch({ type: 'SET_LIST_STYLE', payload: this.value });
+    addEl(listStyleSelect, 'change', (e) => {
+      const target = e.target as HTMLSelectElement;
+      stateManager.dispatch({ type: 'SET_LIST_STYLE', payload: target.value });
       scheduleSave({ silent: true });
     });
 
-    // List num size slider — NO history, only save
-    addEl(listNumSizeSlider, 'input', function () {
-      const size = Number(this.value);
+    // List num size slider
+    addEl(listNumSizeSlider, 'input', (e) => {
+      const target = e.target as HTMLInputElement;
+      const size = Number(target.value);
       if (listNumSizeValue) listNumSizeValue.textContent = `${size}px`;
       if (activeCardIndexForColors !== null) {
+        // Dispatch through StateManager — no direct mutation
+        stateManager.dispatch({
+          type: 'SET_CARD_COLOR',
+          payload: { idx: activeCardIndexForColors, key: 'listNumSize', value: String(size) },
+        });
         const card = stateManager.getCard(activeCardIndexForColors);
         if (!card) return;
-        if (!card.colors) card.colors = {};
-        card.colors.listNumSize = String(size);
         previewRenderer.updateCardField(card, 'listNumSize', activeCardIndexForColors);
         scheduleSave({ silent: true });
+        scheduleHistoryPush();
       }
     });
 
@@ -951,19 +997,23 @@ export function initCardCraftApp(root: HTMLElement): () => void {
     MODAL_FIELDS.forEach((f) => {
       const input = $<HTMLInputElement>(`#col-${f.key}`);
       const hexText = $<HTMLElement>(`#hex-${f.key}`);
-      addEl(input, 'input', function () {
+      addEl(input, 'input', (e) => {
         if (activeCardIndexForColors === null) return;
-        const card = stateManager.getCard(activeCardIndexForColors);
-        if (!card) return;
-        if (!card.colors) card.colors = {};
-        card.colors[f.key] = this.value;
+        const target = e.target as HTMLInputElement;
+        // Dispatch through StateManager — no direct mutation
+        stateManager.dispatch({
+          type: 'SET_CARD_COLOR',
+          payload: { idx: activeCardIndexForColors, key: f.key, value: target.value },
+        });
         if (hexText) {
-          hexText.textContent = this.value;
+          hexText.textContent = target.value;
           hexText.classList.remove('is-auto');
         }
         selectRowField(f.key);
-        previewRenderer.updateCardStyle(card, f.key, activeCardIndexForColors);
+        const card = stateManager.getCard(activeCardIndexForColors);
+        if (card) previewRenderer.updateCardStyle(card, f.key, activeCardIndexForColors);
         scheduleSave({ silent: true });
+        scheduleHistoryPush();
       });
     });
 
@@ -973,9 +1023,11 @@ export function initCardCraftApp(root: HTMLElement): () => void {
         e.stopPropagation();
         const f = btn.dataset.reset || '';
         if (activeCardIndexForColors === null) return;
-        const card = stateManager.getCard(activeCardIndexForColors);
-        if (!card) return;
-        delete card.colors?.[f];
+        // Dispatch through StateManager — no direct mutation
+        stateManager.dispatch({
+          type: 'DELETE_CARD_COLOR',
+          payload: { idx: activeCardIndexForColors, key: f },
+        });
         const hexText = $<HTMLElement>(`#hex-${f}`);
         const input = $<HTMLInputElement>(`#col-${f}`);
         if (hexText) {
@@ -984,8 +1036,10 @@ export function initCardCraftApp(root: HTMLElement): () => void {
         }
         if (input) input.value = '#000000';
         selectRowField(f);
-        previewRenderer.updateCardStyle(card, f, activeCardIndexForColors);
+        const card = stateManager.getCard(activeCardIndexForColors);
+        if (card) previewRenderer.updateCardStyle(card, f, activeCardIndexForColors);
         scheduleSave({ silent: true });
+        scheduleHistoryPush();
       });
     });
 
@@ -996,10 +1050,11 @@ export function initCardCraftApp(root: HTMLElement): () => void {
         if (activeCardIndexForColors === null) return;
         const hex = sw.dataset.preset || sw.dataset.color || '';
         const f = lastActiveField || 'title';
-        const card = stateManager.getCard(activeCardIndexForColors);
-        if (!card) return;
-        if (!card.colors) card.colors = {};
-        card.colors[f] = hex;
+        // Dispatch through StateManager — no direct mutation
+        stateManager.dispatch({
+          type: 'SET_CARD_COLOR',
+          payload: { idx: activeCardIndexForColors, key: f, value: hex },
+        });
         const input = $<HTMLInputElement>(`#col-${f}`);
         const hexText = $<HTMLElement>(`#hex-${f}`);
         if (input) input.value = hex;
@@ -1008,12 +1063,14 @@ export function initCardCraftApp(root: HTMLElement): () => void {
           hexText.classList.remove('is-auto');
         }
         selectRowField(f);
-        previewRenderer.updateCardStyle(card, f, activeCardIndexForColors);
+        const card = stateManager.getCard(activeCardIndexForColors);
+        if (card) previewRenderer.updateCardStyle(card, f, activeCardIndexForColors);
         scheduleSave({ silent: true });
+        scheduleHistoryPush();
       });
     });
 
-    // Section format buttons — DO push history
+    // Section format buttons — toggle fontWeight/fontStyle/textDecoration via dispatch
     root.querySelectorAll<HTMLElement>('.format-btn-section').forEach((btn) => {
       addEl(btn, 'click', (e) => {
         e.stopPropagation();
@@ -1022,66 +1079,57 @@ export function initCardCraftApp(root: HTMLElement): () => void {
         if (activeCardIndexForColors === null) return;
         const card = stateManager.getCard(activeCardIndexForColors);
         if (!card) return;
-        if (!card.sectionStyles) card.sectionStyles = {};
-        if (!card.sectionStyles[field]) card.sectionStyles[field] = {};
-        const styles = card.sectionStyles[field]!;
+        const existing = card.sectionStyles?.[field] ?? {};
+        // Compute the new style delta based on the toggle
+        let styleUpdate: Partial<import('../core/types').SectionStyle> = {};
         if (fmt === 'bold') {
-          if (styles.fontWeight === 'bold') {
-            delete styles.fontWeight;
-            btn.classList.remove('active');
-          } else {
-            styles.fontWeight = 'bold';
-            btn.classList.add('active');
-          }
+          const newWeight = existing.fontWeight === 'bold' ? undefined : 'bold';
+          styleUpdate = { fontWeight: newWeight };
+          btn.classList.toggle('active', newWeight === 'bold');
         } else if (fmt === 'italic') {
-          if (styles.fontStyle === 'italic') {
-            delete styles.fontStyle;
-            btn.classList.remove('active');
-          } else {
-            styles.fontStyle = 'italic';
-            btn.classList.add('active');
-          }
-        } else if (fmt === 'underline') {
-          const d = styles.textDecoration || '';
-          if (d.includes('underline')) {
-            styles.textDecoration = d.replace('underline', '').trim();
-            btn.classList.remove('active');
-          } else {
-            styles.textDecoration = (d + ' underline').trim();
-            btn.classList.add('active');
-          }
-        } else if (fmt === 'strikethrough') {
-          const d = styles.textDecoration || '';
-          if (d.includes('line-through')) {
-            styles.textDecoration = d.replace('line-through', '').trim();
-            btn.classList.remove('active');
-          } else {
-            styles.textDecoration = (d + ' line-through').trim();
-            btn.classList.add('active');
-          }
+          const newStyle = existing.fontStyle === 'italic' ? undefined : 'italic';
+          styleUpdate = { fontStyle: newStyle };
+          btn.classList.toggle('active', newStyle === 'italic');
+        } else if (fmt === 'underline' || fmt === 'strikethrough') {
+          const d = existing.textDecoration || '';
+          const token = fmt === 'underline' ? 'underline' : 'line-through';
+          const has = d.split(/\s+/).includes(token);
+          let parts = d.split(/\s+/).filter((p) => p && p !== token);
+          if (!has) parts.push(token);
+          parts = parts.filter((p, i) => parts.indexOf(p) === i); // dedupe
+          styleUpdate = { textDecoration: parts.length > 0 ? parts.join(' ') : undefined };
+          btn.classList.toggle('active', !has);
         }
-        previewRenderer.updateCardStyle(card, field, activeCardIndexForColors);
+        // Dispatch the incremental update through StateManager
+        stateManager.dispatch({
+          type: 'UPDATE_CARD_SECTION_STYLE',
+          payload: { idx: activeCardIndexForColors, field, style: styleUpdate },
+        });
+        const updated = stateManager.getCard(activeCardIndexForColors);
+        if (updated) previewRenderer.updateCardStyle(updated, field, activeCardIndexForColors);
         scheduleSave({ silent: true });
         scheduleHistoryPush();
       });
     });
 
-    // Section size sliders — NO history, only save
+    // Section size sliders
     root.querySelectorAll<HTMLInputElement>('.size-slider-section').forEach((sl) => {
       addEl(sl, 'input', (e) => {
         e.stopPropagation();
         const field = sl.dataset.field || '';
         const size = Number(sl.value);
         if (activeCardIndexForColors === null) return;
-        const card = stateManager.getCard(activeCardIndexForColors);
-        if (!card) return;
-        if (!card.sectionStyles) card.sectionStyles = {};
-        if (!card.sectionStyles[field]) card.sectionStyles[field] = {};
-        card.sectionStyles[field]!.fontSize = size;
+        // Dispatch through StateManager — no direct mutation
+        stateManager.dispatch({
+          type: 'UPDATE_CARD_SECTION_STYLE',
+          payload: { idx: activeCardIndexForColors, field, style: { fontSize: size } },
+        });
         const sv = $<HTMLElement>(`.size-value-section[data-field="${field}"]`);
         if (sv) sv.textContent = `${size}px`;
-        previewRenderer.updateCardStyle(card, field, activeCardIndexForColors);
+        const card = stateManager.getCard(activeCardIndexForColors);
+        if (card) previewRenderer.updateCardStyle(card, field, activeCardIndexForColors);
         scheduleSave({ silent: true });
+        scheduleHistoryPush();
       });
     });
 
@@ -1090,8 +1138,7 @@ export function initCardCraftApp(root: HTMLElement): () => void {
       if (activeCardIndexForColors === null) return;
       const card = stateManager.getCard(activeCardIndexForColors);
       if (!card) return;
-      card.colors = {};
-      card.sectionStyles = {};
+      // Dispatch through StateManager — no direct mutation
       stateManager.dispatch({
         type: 'SET_CARD_COLORS',
         payload: { idx: activeCardIndexForColors, colors: {} },

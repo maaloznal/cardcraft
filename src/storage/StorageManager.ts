@@ -1,10 +1,19 @@
 /**
  * StorageManager — single module that owns all localStorage access.
  * No other code in the project should call localStorage directly.
+ *
+ * All data loaded from localStorage is treated as untrusted and sanitized
+ * via the validation module before being returned to callers.
  */
 
 import type { Card } from '../core/types';
-import { deepClone } from '../core/utils';
+import {
+  sanitizeCards,
+  sanitizeTheme,
+  sanitizeFormat,
+  sanitizeProgressStyle,
+  sanitizeListStyle,
+} from '../core/validation';
 
 const KEYS = {
   CARDS: 'flashcard-cards',
@@ -74,12 +83,14 @@ export function load(): Partial<SavedState> {
   const savedCards = localStorage.getItem(KEYS.CARDS);
   if (savedCards) {
     try {
-      const parsed = JSON.parse(savedCards) as Card[];
-      if (Array.isArray(parsed) && parsed.length) {
-        result.cards = parsed.map(migrateCard);
+      const parsed: unknown = JSON.parse(savedCards);
+      // Sanitize all card data — treat as untrusted
+      const sanitized = sanitizeCards(parsed);
+      if (sanitized.length > 0) {
+        result.cards = sanitized;
       }
     } catch {
-      // Corrupted — clear and continue
+      // Corrupted JSON — clear cards/theme/format keys
       localStorage.removeItem(KEYS.CARDS);
       localStorage.removeItem(KEYS.THEME);
       localStorage.removeItem(KEYS.FORMAT);
@@ -87,10 +98,10 @@ export function load(): Partial<SavedState> {
   }
 
   const theme = localStorage.getItem(KEYS.THEME);
-  if (theme) result.theme = theme;
+  if (theme !== null) result.theme = sanitizeTheme(theme);
 
   const format = localStorage.getItem(KEYS.FORMAT);
-  if (format) result.format = format;
+  if (format !== null) result.format = sanitizeFormat(format);
 
   const showNumbers = localStorage.getItem(KEYS.SHOW_NUMBERS);
   if (showNumbers !== null) result.showCardNumbers = showNumbers === 'true';
@@ -99,22 +110,31 @@ export function load(): Partial<SavedState> {
   if (showProgress !== null) result.showProgressBar = showProgress === 'true';
 
   const progressStyle = localStorage.getItem(KEYS.PROGRESS_STYLE);
-  if (progressStyle) result.progressBarStyle = progressStyle;
+  if (progressStyle !== null) result.progressBarStyle = sanitizeProgressStyle(progressStyle);
 
   const listStyle = localStorage.getItem(KEYS.LIST_STYLE);
-  if (listStyle) result.listStyleType = listStyle;
+  if (listStyle !== null) result.listStyleType = sanitizeListStyle(listStyle);
 
   const gradientAngle = localStorage.getItem(KEYS.GRADIENT_ANGLE);
-  if (gradientAngle) result.gradientAngle = Number(gradientAngle) || 135;
+  if (gradientAngle) {
+    const n = Number(gradientAngle);
+    result.gradientAngle = Number.isFinite(n) ? Math.max(0, Math.min(360, Math.round(n))) : 135;
+  }
 
   const charLimit = localStorage.getItem(KEYS.CHAR_LIMIT);
   if (charLimit !== null) result.charLimitEnabled = charLimit === 'true';
 
   const sidebarWidth = localStorage.getItem(KEYS.SIDEBAR_WIDTH);
-  if (sidebarWidth) result.sidebarWidth = Number(sidebarWidth);
+  if (sidebarWidth) {
+    const n = Number(sidebarWidth);
+    if (Number.isFinite(n)) result.sidebarWidth = Math.max(260, Math.min(520, Math.round(n)));
+  }
 
   const headerHeight = localStorage.getItem(KEYS.HEADER_HEIGHT);
-  if (headerHeight) result.headerHeight = Number(headerHeight);
+  if (headerHeight) {
+    const n = Number(headerHeight);
+    if (Number.isFinite(n)) result.headerHeight = Math.max(60, Math.min(800, Math.round(n)));
+  }
 
   return result;
 }
@@ -123,49 +143,32 @@ export function clear(): void {
   Object.values(KEYS).forEach((key) => localStorage.removeItem(key));
 }
 
-/** Migrate old card format to current structure */
-function migrateCard(card: Partial<Card>): Card {
-  const migrated: Card = {
-    id: card.id || crypto.randomUUID?.() || Date.now().toString(36),
-    title: card.title || '',
-    subtitle: card.subtitle || '',
-    text: card.text || '',
-    listItems: card.listItems || '',
-    footer: card.footer || '',
-    cta: card.cta || '',
-    colors: card.colors || {},
-    wordStyles: {},
-    sectionStyles: card.sectionStyles || {},
-    theme: card.theme,
-  };
+/** Save sidebar width directly (called by resizers) */
+export function saveSidebarWidth(width: number): void {
+  const clamped = Math.max(260, Math.min(520, Math.round(width)));
+  localStorage.setItem(KEYS.SIDEBAR_WIDTH, String(clamped));
+}
 
-  // Migrate wordStyles: old keys (without ::) → new (with field::)
-  if (card.wordStyles) {
-    Object.keys(card.wordStyles).forEach((key) => {
-      if (key.includes('::')) {
-        migrated.wordStyles[key] = card.wordStyles![key];
-      } else {
-        migrated.wordStyles[`title::${key}`] = card.wordStyles![key];
-      }
-    });
-  }
+/** Save header height directly (called by resizers) */
+export function saveHeaderHeight(height: number): void {
+  const clamped = Math.max(60, Math.min(800, Math.round(height)));
+  localStorage.setItem(KEYS.HEADER_HEIGHT, String(clamped));
+}
 
-  // Migrate sectionStyles: { bold: "bold" } → { fontWeight: "bold" }
-  if (card.sectionStyles) {
-    Object.keys(card.sectionStyles).forEach((field) => {
-      const old = card.sectionStyles![field] as Record<string, unknown>;
-      const ns: Record<string, string | number> = {};
-      if (old.bold === 'bold' || old.fontWeight === 'bold') ns.fontWeight = 'bold';
-      if (old.italic === 'italic' || old.fontStyle === 'italic') ns.fontStyle = 'italic';
-      const deco = (old.textDecoration as string) || '';
-      const parts: string[] = [];
-      if (old.underline || deco.includes('underline')) parts.push('underline');
-      if (old.strikethrough || deco.includes('line-through')) parts.push('line-through');
-      if (parts.length) ns.textDecoration = parts.join(' ');
-      if (old.fontSize) ns.fontSize = Number(old.fontSize);
-      migrated.sectionStyles[field] = ns as Card['sectionStyles'][string];
-    });
-  }
+/** Load sidebar width (called by resizers) */
+export function loadSidebarWidth(): number | null {
+  const v = localStorage.getItem(KEYS.SIDEBAR_WIDTH);
+  if (!v) return null;
+  const n = Number(v);
+  if (!Number.isFinite(n)) return null;
+  return Math.max(260, Math.min(520, Math.round(n)));
+}
 
-  return migrated;
+/** Load header height (called by resizers) */
+export function loadHeaderHeight(): number | null {
+  const v = localStorage.getItem(KEYS.HEADER_HEIGHT);
+  if (!v) return null;
+  const n = Number(v);
+  if (!Number.isFinite(n)) return null;
+  return Math.max(60, Math.min(800, Math.round(n)));
 }

@@ -65,6 +65,8 @@ export class Dropdown {
   private clickHandler: (e: Event) => void;
   private docClickHandler: (e: Event) => void;
   private keydownHandler: (e: KeyboardEvent) => void;
+  /** rAF handle for deferred document listener attachment — tracked for cleanup. */
+  private rafHandle: number | null = null;
 
   constructor(dropdown: HTMLElement, opts: DropdownOptions = {}) {
     this.dropdown = dropdown;
@@ -100,8 +102,13 @@ export class Dropdown {
     this.menu.classList.add('open');
     this.trigger?.setAttribute('aria-expanded', 'true');
     if (this.closeOnClickOutside) {
-      // Defer to avoid catching the click that opened the menu
-      requestAnimationFrame(() => document.addEventListener('click', this.docClickHandler));
+      // Defer to avoid catching the click that opened the menu.
+      // Track the rAF handle so destroy() can cancel it — otherwise the
+      // listener would be attached after destroy completed, leaking.
+      this.rafHandle = requestAnimationFrame(() => {
+        this.rafHandle = null;
+        document.addEventListener('click', this.docClickHandler);
+      });
     }
     if (this.closeOnEscape) {
       document.addEventListener('keydown', this.keydownHandler);
@@ -113,6 +120,11 @@ export class Dropdown {
     if (!this.menu || !this.isOpen) return;
     this.menu.classList.remove('open');
     this.trigger?.setAttribute('aria-expanded', 'false');
+    // Cancel any pending rAF — the deferred listener should not attach
+    if (this.rafHandle !== null) {
+      cancelAnimationFrame(this.rafHandle);
+      this.rafHandle = null;
+    }
     document.removeEventListener('click', this.docClickHandler);
     document.removeEventListener('keydown', this.keydownHandler);
     this.closeHandlers.forEach((fn) => fn());
@@ -154,6 +166,11 @@ export class Dropdown {
   }
 
   destroy(): void {
+    // Cancel any pending rAF so the deferred listener doesn't attach after destroy
+    if (this.rafHandle !== null) {
+      cancelAnimationFrame(this.rafHandle);
+      this.rafHandle = null;
+    }
     this.dropdown.removeEventListener('click', this.clickHandler);
     document.removeEventListener('click', this.docClickHandler);
     document.removeEventListener('keydown', this.keydownHandler);

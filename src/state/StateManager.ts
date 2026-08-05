@@ -249,6 +249,26 @@ export class StateManager {
         list[idx] = { ...list[idx], colors: { ...colors } };
         return { ...state, cards: { list } };
       }
+      case 'SET_CARD_COLOR': {
+        const { idx, key, value } = action.payload as { idx: number; key: string; value: string };
+        if (idx < 0 || idx >= state.cards.list.length) return state;
+        const card = state.cards.list[idx];
+        const newColors = { ...card.colors, [key]: value };
+        const list = [...state.cards.list];
+        list[idx] = { ...card, colors: newColors };
+        return { ...state, cards: { list } };
+      }
+      case 'DELETE_CARD_COLOR': {
+        const { idx, key } = action.payload as { idx: number; key: string };
+        if (idx < 0 || idx >= state.cards.list.length) return state;
+        const card = state.cards.list[idx];
+        if (!card.colors || !(key in card.colors)) return state;
+        const newColors = { ...card.colors };
+        delete newColors[key];
+        const list = [...state.cards.list];
+        list[idx] = { ...card, colors: newColors };
+        return { ...state, cards: { list } };
+      }
       case 'SET_CARD_SECTION_STYLES': {
         const { idx, sectionStyles } = action.payload as {
           idx: number;
@@ -257,6 +277,23 @@ export class StateManager {
         if (idx < 0 || idx >= state.cards.list.length) return state;
         const list = [...state.cards.list];
         list[idx] = { ...list[idx], sectionStyles: { ...sectionStyles } };
+        return { ...state, cards: { list } };
+      }
+      case 'UPDATE_CARD_SECTION_STYLE': {
+        const { idx, field, style } = action.payload as {
+          idx: number;
+          field: string;
+          style: Partial<import('../core/types').SectionStyle>;
+        };
+        if (idx < 0 || idx >= state.cards.list.length) return state;
+        const card = state.cards.list[idx];
+        const existing = card.sectionStyles?.[field] ?? {};
+        const newSectionStyles = {
+          ...card.sectionStyles,
+          [field]: { ...existing, ...style },
+        };
+        const list = [...state.cards.list];
+        list[idx] = { ...card, sectionStyles: newSectionStyles };
         return { ...state, cards: { list } };
       }
       case 'SET_CARD_WORD_STYLES': {

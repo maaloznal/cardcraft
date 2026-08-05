@@ -81,7 +81,10 @@ export type ActionType =
   | 'UPDATE_CARD_FIELD'
   | 'SET_CARD_THEME'
   | 'SET_CARD_COLORS'
+  | 'SET_CARD_COLOR'           // Incremental: set a single color key
+  | 'DELETE_CARD_COLOR'        // Incremental: delete a single color key
   | 'SET_CARD_SECTION_STYLES'
+  | 'UPDATE_CARD_SECTION_STYLE' // Incremental: merge a single section style
   | 'SET_CARD_WORD_STYLES'
   | 'DELETE_CARD_WORD_STYLE'
   | 'SET_GLOBAL_THEME'
