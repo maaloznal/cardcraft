@@ -381,7 +381,7 @@ export function initCardCraftApp(root: HTMLElement): () => void {
   }
 
   /* ---------- 10. State subscriber (sync UI controls, NO re-render) ---------- */
-  stateManager.subscribe((state: AppState) => {
+  const unsubscribeState = stateManager.subscribe((state: AppState) => {
     // Sync selects/toggles/sliders (idempotent — only update if differs)
     if (themeSelect && themeSelect.value !== state.settings.theme) {
       themeSelect.value = state.settings.theme;
@@ -1219,6 +1219,8 @@ export function initCardCraftApp(root: HTMLElement): () => void {
     verticalResize.destroy();
     horizontalResize.destroy();
     toastQueue.destroy();
+    // Unsubscribe from state changes (prevents leak on React remount)
+    unsubscribeState();
     // Clear timers
     if (saveTimer) clearTimeout(saveTimer);
     historyManager.clear();

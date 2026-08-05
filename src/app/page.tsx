@@ -1,14 +1,10 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { initCardConstructor as initCardConstructorOld, THEME_GROUPS as OLD_THEME_GROUPS } from '@/lib/card-constructor';
-import { initCardCraftApp, THEME_GROUPS as NEW_THEME_GROUPS } from '@/orchestrator/CardCraftApp';
+import { initCardCraftApp, THEME_GROUPS } from '@/orchestrator/CardCraftApp';
 import './card-constructor.css';
 
-// Feature flag: when true, use the new modular orchestrator; when false, fall back to old God Function.
-const USE_NEW_ORCHESTRATOR = true;
-const THEME_GROUPS = USE_NEW_ORCHESTRATOR ? NEW_THEME_GROUPS : OLD_THEME_GROUPS;
-const initCardConstructor = USE_NEW_ORCHESTRATOR ? initCardCraftApp : initCardConstructorOld;
+const initCardConstructor = initCardCraftApp;
 
 const FORMATS = [
   { value: 'auto', label: 'Стандартный — 380×auto' },

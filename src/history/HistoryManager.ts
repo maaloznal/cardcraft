@@ -16,8 +16,13 @@ export class HistoryManager<T> {
     this.maxHistory = maxHistory;
   }
 
-  /** Take an immediate snapshot */
+  /** Take an immediate snapshot. Cancels any pending debounced push. */
   push(snapshot: T): void {
+    // Cancel pending schedulePush — an immediate push supersedes it.
+    if (this.historyTimer) {
+      clearTimeout(this.historyTimer);
+      this.historyTimer = null;
+    }
     this.history = this.history.slice(0, this.histIndex + 1);
     this.history.push(deepClone(snapshot));
     if (this.history.length > this.maxHistory) {
@@ -33,16 +38,26 @@ export class HistoryManager<T> {
     this.historyTimer = setTimeout(() => this.push(snapshot), delay);
   }
 
-  /** Undo — returns previous snapshot or null */
+  /** Undo — returns previous snapshot or null. Cancels any pending debounced push. */
   undo(): T | null {
     if (this.histIndex <= 0) return null;
+    // Cancel pending schedulePush — otherwise it would fire after undo
+    // and push a pre-undo snapshot, corrupting the redo stack.
+    if (this.historyTimer) {
+      clearTimeout(this.historyTimer);
+      this.historyTimer = null;
+    }
     this.histIndex--;
     return deepClone(this.history[this.histIndex]);
   }
 
-  /** Redo — returns next snapshot or null */
+  /** Redo — returns next snapshot or null. Cancels any pending debounced push. */
   redo(): T | null {
     if (this.histIndex >= this.history.length - 1) return null;
+    if (this.historyTimer) {
+      clearTimeout(this.historyTimer);
+      this.historyTimer = null;
+    }
     this.histIndex++;
     return deepClone(this.history[this.histIndex]);
   }

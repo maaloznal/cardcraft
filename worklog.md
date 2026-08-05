@@ -1339,3 +1339,66 @@ Stage Summary:
   UI Kit default mismatches, Escape priority, etc.).
 - Map will be used to write src/orchestrator/CardCraftApp.ts.
 
+
+---
+Task ID: 32
+Agent: main
+Task: Sprint 1-3 — Stabilization, docs, legacy removal.
+
+Work Log:
+
+Sprint 1 (A2 — cleanup verification):
+- Audited orchestrator cleanup function — found gap: stateManager.subscribe()
+  return value was not captured, causing subscriber leak on React remount.
+- Fix: captured `const unsubscribeState = stateManager.subscribe(...)` and
+  added `unsubscribeState()` call to cleanup function.
+- All UI Kit modules already have destroy() — verified called in cleanup.
+- PreviewRenderer/EditorRenderer don't need destroy() — their listeners are
+  on container elements removed from DOM by React (auto GC).
+
+Sprint 1 (A3 — race condition audit):
+- Found race condition in HistoryManager: undo()/redo()/push() did NOT cancel
+  pending schedulePush timer. A debounced push could fire AFTER undo/redo,
+  pushing a pre-undo snapshot and corrupting the redo stack.
+- Fix: added timer cancellation to undo(), redo(), and push() methods.
+- scheduleSave() already clears existing timer before setting new one — no fix needed.
+- historyManager.clear() already cancels pending timer — verified.
+
+Sprint 2 (B1 — documentation update):
+- Rewrote docs/architecture.md with:
+  - Updated layer graph (7 layers: Core → Infrastructure → State → Rendering → UI Kit → Orchestrator → UI)
+  - Updated dependency rules table (7 rows)
+  - Module statistics table (22 modules, 4359 lines, avg 198)
+  - All 18 action types documented
+  - Data flow diagram with undo/redo path
+  - Race condition prevention section
+  - Cleanup section documenting all destroy/unsubscribe calls
+  - Migration status: "Migration complete" — legacy removed
+
+Sprint 3 (C1+C2 — legacy removal):
+- Verified 109/109 smoke tests pass consistently (5/5 runs).
+- Deleted src/lib/card-constructor.ts (2731 lines — God Function).
+- Updated src/app/page.tsx:
+  - Removed import of initCardConstructorOld, OLD_THEME_GROUPS.
+  - Removed USE_NEW_ORCHESTRATOR feature flag.
+  - Simplified to: import { initCardCraftApp, THEME_GROUPS } from '@/orchestrator/CardCraftApp'.
+  - Kept alias: const initCardConstructor = initCardCraftApp (for minimal diff).
+- Verified: no remaining imports from '@/lib/card-constructor'.
+- Only reference is './card-constructor.css' (CSS file — kept, correct).
+
+Verification:
+- Lint: 0 errors, 0 warnings.
+- Dev server: compiles cleanly, serving 200 OK.
+- Smoke tests: 109/109 passing (verified 5 consecutive runs via Agent Browser).
+- Console: no runtime errors, no warnings.
+- Total codebase reduction: -2731 lines (legacy) + cleanup.
+
+Stage Summary:
+- 3 sprints completed: stabilization, documentation, legacy removal.
+- Race condition fixed in HistoryManager (undo/redo/push cancel pending timer).
+- Subscription leak fixed in orchestrator (unsubscribeState on cleanup).
+- docs/architecture.md fully rewritten with current state.
+- Legacy God Function deleted — app runs exclusively on modular orchestrator.
+- 109/109 smoke tests pass consistently.
+- Remaining future work: React StrictMode (needs double-mount audit),
+  unit tests (Vitest), bundle analysis, type safety (ignoreBuildErrors removal).
