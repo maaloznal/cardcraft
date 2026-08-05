@@ -997,3 +997,57 @@ Additional regression testing:
 Stage Summary:
 - Both bugs fixed architecturally.
 - Full regression audit completed — project is stable.
+
+---
+Task ID: 23
+Agent: main
+Task: Architectural decomposition — extract 10 modules from God Function.
+
+Work Log:
+Phase 1 (Feature Freeze): Completed — no new features, only stabilization.
+
+Created 10 new modules in dedicated directories:
+
+src/core/
+  types.ts (102 lines) — All TypeScript interfaces: Card, WordStyle, SectionStyle, Snapshot, ThemeGroup, EditorField, ModalField, FieldConfig, Action, ActionType
+  constants.ts (101 lines) — All magic numbers: CONFIG, CARD_WIDTH, SIDEBAR_WIDTH, DEFAULT_THEME, PRESET_COLORS, FORMAT_CHAR_LIMITS, FIELD_LABELS, EDITOR_FIELDS, MODAL_FIELDS, FIELD_CONFIG, SHAPE_PROGRESS_STYLES, MODAL_GROUPS
+  utils.ts (65 lines) — Pure functions: escapeHtml, generateId, deepClone, splitOnce, isWordChar, containsWholeWord, stripMeta
+
+src/storage/
+  StorageManager.ts (171 lines) — save(), load(), clear(), migrateCard(). All 11 localStorage keys centralized. No other code should access localStorage directly.
+
+src/history/
+  HistoryManager.ts (76 lines) — Class-based undo/redo: push(), schedulePush(), undo(), redo(), init(), canUndo, canRedo, clear(). Debounce built-in.
+
+src/themes/
+  themeData.ts (118 lines) — THEME_GROUPS array with all 90 themes (4 groups: Светлые, Тёмные, Градиентные, Без фона)
+  ThemeManager.ts (41 lines) — getThemeLabel(), isNoBgTheme(), resolveCardTheme(), applyThemeToElement(), getThemeGroups()
+
+src/state/
+  StateManager.ts (172 lines) — Class-based centralized state with dispatch/action system. Actions: ADD_CARD, DELETE_CARD, DUPLICATE_CARD, MOVE_CARD, UPDATE_CARD_FIELD, SET_CARD_THEME, SET_GLOBAL_THEME, SET_FORMAT, SET_GRADIENT_ANGLE, SET_SHOW_CARD_NUMBERS, SET_SHOW_PROGRESS_BAR, SET_PROGRESS_BAR_STYLE, SET_LIST_STYLE, SET_CHAR_LIMIT, CLEAR_ALL. subscribe() for reactive updates. snapshot() for history.
+
+src/export/
+  ExportManager.ts (77 lines) — generatePng(), generateBlob(), downloadPng(), copyToClipboard(). All html-to-image interaction centralized.
+
+src/styles/
+  StyleHelpers.ts (127 lines) — buildSectionStyle(), buildListNumStyle(), applyWordStylesToText(), containsWholeWord(), pruneOrphanWordStyles(). Pure functions, no DOM.
+
+Total new code: 1050 lines across 10 modules.
+Average module size: 105 lines (vs 2731 lines in old God Function).
+No non-null assertions (!) in new code.
+No `as` casts except for error handling.
+No `any` types.
+All functions are pure (except StorageManager/ExportManager which have necessary side effects).
+
+Verification:
+- Lint: 0 errors, 0 warnings on all new modules
+- Existing app: 109/109 smoke tests pass — zero regressions
+- New modules compile and export correctly
+- card-constructor.ts still works as before (will be migrated incrementally)
+
+Next steps:
+- EditorRenderer and PreviewRenderer (extract from card-constructor.ts)
+- WordEditorManager (extract popup/drag logic)
+- CardStyleManager (extract modal color/style logic)
+- UI components (Accordion, Modal, Switch, etc.)
+- Migrate card-constructor.ts to use new modules as orchestrator
