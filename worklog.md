@@ -1402,3 +1402,155 @@ Stage Summary:
 - 109/109 smoke tests pass consistently.
 - Remaining future work: React StrictMode (needs double-mount audit),
   unit tests (Vitest), bundle analysis, type safety (ignoreBuildErrors removal).
+
+---
+Task ID: audit-4
+Agent: Explore
+Task: Security/Scalability/Production readiness audit (sections 9, 11, 12).
+Work Log:
+- Read worklog.md tail (Tasks 18–32) and docs/architecture.md for full project context.
+- Read end-to-end: CardCraftApp.ts (1228 lines), PreviewRenderer.ts (441), EditorRenderer.ts (208), WordEditorManager.ts (323), StorageManager.ts (171), ExportManager.ts (77), StyleHelpers.ts (127), core/utils.ts (65), core/types.ts, core/constants.ts, StateManager.ts (337), HistoryManager.ts (76), ThemeManager.ts (41), ui/Modal.ts, ui/Dropdown.ts, components/ErrorBoundary.tsx, app/page.tsx (544), app/layout.tsx, app/api/route.ts.
+- Read configs: next.config.ts, package.json, tsconfig.json, eslint.config.mjs, prisma/schema.prisma.
+- Grep-audited: innerHTML assignments (15 occurrences across 3 files), dangerouslySetInnerHTML (1 — shadcn chart.tsx, unused), localStorage access (24 occurrences — found resizers.ts violates "StorageManager owns localStorage" claim), escapeHtml usages (15), card.id interpolations into HTML attributes (5 — confirmed unescaped).
+- Verified escapeHtml implementation: escapes & < > " ' but NOT backtick; used in CSS attribute context (style="…") where it is the WRONG escaper — CSS injection still possible via unescaped fontWeight/fontStyle/textDecoration/fontSize values from localStorage.
+- Confirmed ignoreBuildErrors: true and reactStrictMode: false in next.config.ts.
+- Confirmed ESLint config disables ~25 rules including @typescript-eslint/no-explicit-any, no-unused-vars, no-unreachable, no-fallthrough, react-hooks/exhaustive-deps — lint "0 warnings" claim is meaningless.
+- Confirmed no CSP headers, no rate limiting (N/A client-side), no Sentry/telemetry, no service worker, no unit tests (only 1 smoke-test.js with 109 assertions run via Agent Browser).
+- Confirmed API surface is a stub (`{ message: "Hello, world!" }`) and Prisma schema has User/Post models that are unused — leftover scaffolding.
+- No code changes made — audit only.
+
+Stage Summary:
+- Architecture will survive 2–3× growth but not 10×. Top bottlenecks: CardCraftApp.ts (1228 LOC God Orchestrator), card-constructor.css (3700 LOC monolith), themeData.ts (single static array of 90 themes), StateManager reducer (one switch with 18 cases), PreviewRenderer (one class handles all card types).
+- Security: 5 confirmed XSS-adjacent vectors via localStorage-manipulated card fields (card.id, card.theme, settings.theme, settings.format interpolated into HTML attributes WITHOUT escapeHtml). CSS injection possible via unescaped style values in buildSectionStyle/applyWordStylesToText. No CSP. No input validation on localStorage load. Resizers.ts violates single-owner localStorage rule. escapeHtml is used in CSS context (wrong tool).
+- Production readiness verdict: NOT READY. Critical blockers: ignoreBuildErrors:true (TypeScript errors silently shipped), reactStrictMode:false (hides double-mount bugs), no unit tests, no CI/CD, no error monitoring, no CSP, ESLint config disables 25+ critical rules. App is a working prototype with a clean module facade over a fragile core.
+
+---
+Task ID: audit-1
+Agent: Explore
+Task: Architecture/State/Rendering audit (sections 1, 2, 5).
+Work Log:
+- Read worklog.md tail (Tasks 18–32) for refactor context.
+- Read docs/architecture.md (full) for documented architecture.
+- Read src/orchestrator/CardCraftApp.ts (1228 lines, full).
+- Read src/state/StateManager.ts (337 lines, full).
+- Read src/history/HistoryManager.ts (87 lines, full).
+- Read src/preview/PreviewRenderer.ts (441 lines, full).
+- Read src/editor/EditorRenderer.ts (208 lines, full).
+- Read src/word-editor/WordEditorManager.ts (323 lines, full).
+- Read src/core/types.ts, src/core/constants.ts, src/core/utils.ts (full).
+- Read src/storage/StorageManager.ts (full).
+- Read src/styles/StyleHelpers.ts (full).
+- Read src/app/page.tsx (544 lines, full).
+- Read src/orchestrator/toast.ts and src/orchestrator/resizers.ts (full)
+  to verify cleanup symmetry and storage contract.
+- Cross-referenced direct card mutations vs dispatch usage.
+- Cross-referenced O(1) renderer methods vs actual call sites (found
+  removeCard/insertCard/updateProgressBars are dead code).
+- Cross-referenced index-based vs ID-based lookups across all card ops.
+- Cross-referenced every full re-render trigger with available O(1) methods.
+
+Stage Summary (key findings):
+- Orchestrator (1228 lines) is a God Object doing DOM cache, view sync,
+  all event binding, card ops, export, sidebar, modal, word popup, keyboard,
+  and cleanup — 10+ responsibilities in one closure.
+- State contract is BROKEN: orchestrator directly mutates card.colors /
+  card.sectionStyles / card[field] in ≥7 sites (lines 450, 898, 959, 1002,
+  1027, 1080, 1093-1094), bypassing StateManager.dispatch. UPDATE_CARD_FIELD
+  action is dead code.
+- UIState (sidebarOpen, activeCardIndex, colorModalOpen, wordPopupOpen,
+  confirmDialogOpen) is dead code — orchestrator uses 5 local `let` vars
+  as shadow UI state.
+- Index-based card lookups via data-index DOM attribute; O(1) methods
+  (removeCard, insertCard, updateProgressBars) built but UNUSED — every
+  card op falls back to full renderEditor+renderPreview. Same anti-pattern
+  that caused the Task 22 deleteCard TypeError.
+- History is incomplete: Snapshot type only stores cards+theme+format.
+  Color changes, section style changes, listNumSize changes, gradientAngle,
+  numbering/progress toggles, listStyle, charLimit are NOT undoable.
+  Color/section/size handlers call scheduleSave but NOT scheduleHistoryPush.
+- Race: async downloadAllPng (250ms/card × N) does not block editor input;
+  user typing mid-export mutates the DOM node being rasterized by
+  html-to-image → torn PNG.
+- WordEditorManager.destroy() only cleans drag listeners; initControls()
+  listeners on format-btn / color-preset / popup-section-title / clearBtn
+  are NOT tracked and NOT removed. renderWordStyleList() adds fresh
+  listeners to .word-list-remove buttons every call, never removed.
+- Storage contract violation: resizers.ts directly calls
+  localStorage.setItem/getItem for sidebar-width and header-height,
+  bypassing StorageManager. SavedState.sidebarWidth/headerHeight loaded
+  by orchestrator are dead data (never applied).
+- DRY violation: containsWholeWord is duplicated verbatim in
+  core/utils.ts:48-58 and styles/StyleHelpers.ts:94-104.
+- stripMeta (utils.ts:61-65) is dead code — WordEditorManager
+  inlines the same destructure on line 169.
+- State subscriber runs 6 applyX() functions on EVERY dispatch
+  unconditionally — toggling "show numbers" re-applies theme, gradient,
+  progress bar style, list style, char limit. 8 dispatches on boot
+  → 48 applyX() calls.
+- Modal stays open across undo/redo with stale activeCardIndexForColors;
+  color inputs are not re-synced, so subsequent edits apply to whatever
+  card now lives at that index.
+- 7 full re-renders that could be O(1)/O(n)-attr: addCard, deleteCard,
+  duplicateCard, moveCard, theme change, format change, progress-bar-style
+  change (updateProgressBars method EXISTS but is unused).
+- confirmOverlay (delete-all dialog) has no ESC handler and no focus trap.
+- Toast leak: inner setTimeout on line 39 of toast.ts is untracked;
+  destroy() does not cancel it.
+
+Report returned to caller.
+
+---
+Task ID: audit-2
+Agent: Explore
+Task: Performance/DOM/Stability audit (sections 3, 4, 6).
+Work Log:
+- Read worklog.md tail (Tasks 21–32) and docs/architecture.md for context.
+- Read all 14 critical+supporting files fully: CardCraftApp.ts (1229 lines), PreviewRenderer.ts (441), EditorRenderer.ts (208), WordEditorManager.ts (323), StorageManager.ts (171), HistoryManager.ts (87), StateManager.ts (337), toast.ts (49), resizers.ts (179), export-mode.ts (21), ExportManager.ts (77), StyleHelpers.ts (127), utils.ts (65), constants.ts (101), Modal.ts (178), Dropdown.ts (211), Accordion.ts (155), Switch.ts (125), types.ts (102).
+- Cross-referenced deepClone call sites (7), addEventListener sites (~30), querySelectorAll sites (~20), non-null assertions (10+), `as` casts (~18).
+- Traced every event handler in CardCraftApp.ts: static bindings (bindStatic), renderer callbacks, modal/dropdown callbacks, keyboard shortcuts, document click/keydown delegation.
+- Identified dead code: PreviewRenderer.removeCard/insertCard/updateProgressBars are NEVER called (add/delete/duplicate/move all do full renderPreview + renderEditor instead — confirmed by Task 22 worklog).
+- Identified listener-tracking gaps: WordEditorManager.initControls attaches ~16 listeners with NO cleanup tracking; ToastQueue queued setTimeout not cleared on destroy; Dropdown rAF-deferred doc listener not cancelled on destroy.
+- Identified undo coverage gap: color input changes, color swatch clicks, single-color resets, and section size slider changes do NOT push history → undo doesn't restore them.
+- Identified subscriber-side waste: applyCharLimit + syncThemeDropdown run on EVERY dispatch (including per-pixel gradient slider drag).
+- No code changes made — analysis only.
+
+Stage Summary:
+- 5 Critical, 11 Should-fix, 8 Nice-to-have findings across performance, DOM, and stability.
+- Most severe: undo doesn't capture color/style changes; PreviewRenderer's O(1) methods are dead code; ToastQueue leaks queued timers; applyCharLimit scans all inputs on every dispatch.
+- Full report returned to caller.
+
+---
+Task ID: audit-3
+Agent: Explore
+Task: UX/Design/Code quality audit (sections 7, 8, 10).
+Work Log:
+- Read worklog.md tail (Tasks 1–32) for refactor history context.
+- Read fully: src/app/page.tsx (544 lines), src/app/layout.tsx, src/app/globals.css.
+- Read fully: src/orchestrator/CardCraftApp.ts (1228 lines), toast.ts, resizers.ts, export-mode.ts.
+- Read fully: src/preview/PreviewRenderer.ts, src/editor/EditorRenderer.ts, src/word-editor/WordEditorManager.ts.
+- Read fully: src/state/StateManager.ts, src/storage/StorageManager.ts, src/styles/StyleHelpers.ts.
+- Read fully: src/core/types.ts, src/core/constants.ts, src/core/utils.ts.
+- Read fully: src/ui/Accordion.ts, src/ui/Modal.ts, src/ui/Switch.ts, src/ui/Dropdown.ts, src/ui/index.ts.
+- Read fully: src/components/ErrorBoundary.tsx, tests/smoke-test.js.
+- Skimmed card-constructor.css (3700 lines) in 4 chunks; ran counts for padding/margin/font-size/border-radius/gap/hex/!important/z-index patterns.
+- Searched for dead code: confirmed ~5300 lines of unused shadcn UI kit (src/components/ui/*, src/hooks/*, src/lib/db.ts, src/lib/utils.ts) and unused Switch.ts / ui/index.ts barrel.
+- Searched for non-null assertions (`!.` and `!)`): 14 in CardCraftApp.ts, 1 inline mutation `card.sectionStyles[field]!.fontSize`.
+- Searched for `as` casts: ~9 in CardCraftApp.ts, 18 `action.payload as X` in StateManager.ts, plus ~7 in EditorRenderer, 2 each in Modal/Dropdown/PreviewRenderer.
+- Verified dead APIs: PreviewRenderer.removeCard/insertCard/updateProgressBars never called; EditorRenderer.updateCardNumber never called; EditorRenderer docstring lies about getCardInput/focusField methods that don't exist.
+- Verified ESC doesn't close confirm-overlay (priority chain misses it).
+- Verified WordEditorManager.destroy() only removes drag listeners, NOT the .format-btn/.color-preset/.popup-section-title/#wordClearBtn listeners added in initControls().
+- Verified inline state mutations bypass StateManager.dispatch (8 sites in CardCraftApp.ts: lines 897, 898, 958, 1001, 1025, 1078, 1093, 1094).
+- Verified paste handler in EditorRenderer always preventDefaults (cleanup logic), but bypasses maxlength enforcement implicitly via direct value assignment.
+- Verified word-style-popup is `role="dialog"` WITHOUT `aria-modal="true"` (a11y hole).
+- Verified confirm-overlay is wired manually (not via Modal class) — inconsistent with rest of codebase.
+- Verified two parallel design systems: shadcn/Tailwind (oklch, --radius) vs Cardcraft (hex, --r-*, --ui-*).
+- Verified dark mode CSS exists in globals.css (.dark) but app never applies .dark class — dead.
+- Verified 7 inline style={{...}} objects in page.tsx with magic numbers (10, 4, etc.).
+- Verified 7 `!important` declarations in card-constructor.css.
+- Verified 9 z-index values (10/100/500/900/1000/2000/3000/5000/6000) — ad-hoc, no scale.
+- No code changes made — audit only.
+
+Stage Summary:
+- UX: 5 sidebar accordions all start collapsed (extra clicks); modal darkens+blurs preview (degraded live-editing, full block on mobile); char counter is per-card and goes stale on blur; toast queue blocks short toasts behind 60s batch-export toast (errors invisible during export); confirm dialog has no ESC handler and no Enter-to-confirm; word popup has no focus trap and no aria-modal; no keyboard navigation between cards; sidebar state set once at init via window.innerWidth check (no resize listener); mobile sidebar has backdrop but no swipe gesture; only `cardCountBadge` and `#toast` have aria-live (char counter, gradient value etc. silent).
+- Design: design tokens exist (`--r-*`, `--sh-*`, `--ui-*`, `--dur`, `--ease`) but are ignored in 7+ inline-style sites and bypassed by raw px values for borders (1.5px), gaps, sizes — 37 padding/margin magic numbers, 61 font-size magic numbers, 21 border-radius magic numbers, 53 height magic numbers; two parallel design systems (shadcn vs Cardcraft); 731 raw hex values (most in 90 theme definitions, fine), 26 `transition: all` rules (perf anti-pattern); 5 @keyframes scattered; SVG stroke-width inconsistent (2 vs 2.5 across same chevron icon); `!important` used 7 times; z-index ad-hoc (9 distinct values, no scale); dead CSS rules (`#saveChangesBtn`, `.sidebar-extra-actions`, `.btn-palette`); dark mode tokens exist but never activated.
+- Code quality: CardCraftApp.ts is still a 1186-line God Function (single closure with 24 numbered sections); `bindStatic()` is 345 lines; StateManager has 18 `payload as X` casts because Action.payload is `unknown` (type-safety hole); 14 non-null `!` assertions on DOM queries (should be guarded); inline direct mutation of `card.colors`/`card.sectionStyles` bypasses StateManager.dispatch (8 sites) — half-pure architecture; EditorRenderer docstring lies (lists `getCardInput`/`focusField` methods that don't exist, calls `updateCardTitle` what is actually `updateCardNumber`); 3 PreviewRenderer public API methods (`removeCard`, `insertCard`, `updateProgressBars`) and 1 EditorRenderer method (`updateCardNumber`) are dead code; WordEditorManager.destroy() only cleans drag listeners, leaks the initControls() listeners; ~5300 lines of dead shadcn UI kit + hooks + lib/db.ts + lib/utils.ts inflate the bundle; unused Switch.ts (125 lines) and ui/index.ts barrel (33 lines); 7 inline style objects in page.tsx with hardcoded numbers; confirm-overlay wired manually (not via Modal class) — inconsistent; no unit tests (only browser smoke tests via agent-browser); pure modules (utils, StyleHelpers, constants) ARE testable but have no tests.
