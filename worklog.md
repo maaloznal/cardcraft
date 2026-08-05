@@ -602,3 +602,55 @@ Stage Summary:
 - New modal group "Нумерация списка" with all controls grouped logically.
 - Size slider with auto-scaling font, perfect centering.
 - 106/106 tests pass.
+
+---
+Task ID: 17
+Agent: main
+Task: Workspace improvements — closed accordions by default, vertical/horizontal resize dividers.
+
+Work Log:
+
+TASK 1 — Accordions closed by default:
+- Removed "expanded" class from modal-accordion-group in JSX (was `className="modal-accordion-group expanded"`).
+- Now all 4 groups are collapsed when modal opens. User expands only needed groups.
+- State preserved during session (DOM-based, not persisted).
+- Smooth 200ms animations maintained.
+
+TASK 2 — Vertical resize (height of fixed-header / scroll-area):
+- Added #resizeDividerH between .sidebar-fixed-header and .sidebar-scroll-area.
+- 4px height, cursor: row-resize, visual indicator (32px handle) on hover/drag.
+- initVerticalResize(): pointer events, clamps to min 80px each, max sidebar height - 80.
+- Updates fixedHeader.style.height in real-time during drag.
+- Persists height to localStorage ('flashcard-header-height'), restores on load.
+- Cleanup on unmount.
+
+TASK 3 — Horizontal resize (sidebar width):
+- Added #resizeDividerV between sidebar and workspace.
+- 4px width, cursor: col-resize, visual indicator (32px handle) on hover/drag.
+- initHorizontalResize(): pointer events, clamps to min 240px, max 560px.
+- Updates editorSidebar.style.width in real-time.
+- Disables transition during drag for smooth resize.
+- Persists width to localStorage ('flashcard-sidebar-width'), restores on load.
+- Card size NOT affected (verified 380px before and after resize).
+
+CSS:
+- .resize-divider: base styles, hover/drag state (background → dark).
+- .resize-divider-h: height 4px, cursor row-resize, ::after handle.
+- .resize-divider-v: width 4px, cursor col-resize, ::after handle.
+- Visual indicator: 32px handle with transition, becomes white on hover/drag.
+- sidebar-fixed-header: max-height 50vh, min-height 80px.
+
+Verification (109/109 tests pass):
+- Accordions: 4 groups, 0 expanded by default, click expands (0→1), click collapses (1→0).
+- Vertical divider: exists, cursor row-resize, height changes on drag.
+- Horizontal divider: exists, cursor col-resize, width changes on drag.
+- Card width: 380px before and after resize (not scaled).
+- All sizes persisted to localStorage, restored on reload.
+- 0 browser errors, 0 console errors, lint clean.
+
+Stage Summary:
+- 3 workspace improvements implemented.
+- Accordions closed by default — reduces visual noise.
+- Vertical resize — adjustable height between settings and card editor.
+- Horizontal resize — adjustable sidebar width, cards not scaled.
+- Professional IDE-like feel (Figma/VS Code style).

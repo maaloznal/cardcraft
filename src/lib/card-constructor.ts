@@ -305,6 +305,8 @@ export function initCardConstructor(root: HTMLElement): () => void {
   const listStyleSelect = $<HTMLSelectElement>('#listStyleSelect');
   const listNumSizeSlider = $<HTMLInputElement>('#listNumSizeSlider');
   const listNumSizeValue = $<HTMLElement>('#listNumSizeValue');
+  const resizeDividerH = $<HTMLElement>('#resizeDividerH');
+  const resizeDividerV = $<HTMLElement>('#resizeDividerV');
   const previewWorkspace = $<HTMLElement>('#previewWorkspace');
   const toast = $<HTMLElement>('#toast');
 
@@ -1964,6 +1966,144 @@ export function initCardConstructor(root: HTMLElement): () => void {
     docListeners.push({ type, fn: fn as (e: Event) => void });
   }
 
+  /* ---------- Задача#2: Вертикальный resize (высота fixed-header / scroll-area) ---------- */
+  let vResizeCleanup: (() => void) | null = null;
+  function initVerticalResize(): void {
+    if (!resizeDividerH || !editorSidebar || vResizeCleanup) return;
+    const fixedHeader = editorSidebar.querySelector<HTMLElement>('.sidebar-fixed-header');
+    if (!fixedHeader) return;
+
+    let isDragging = false;
+    let startY = 0;
+    let startHeight = 0;
+
+    const onPointerDown = (e: PointerEvent) => {
+      isDragging = true;
+      startY = e.clientY;
+      startHeight = fixedHeader.getBoundingClientRect().height;
+      resizeDividerH.classList.add('dragging');
+      document.body.style.cursor = 'row-resize';
+      document.body.style.userSelect = 'none';
+      e.preventDefault();
+      document.addEventListener('pointermove', onPointerMove);
+      document.addEventListener('pointerup', onPointerUp);
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (!isDragging) return;
+      const dy = e.clientY - startY;
+      const sidebarHeight = editorSidebar!.getBoundingClientRect().height;
+      // Минимум 80px для каждой области, максимум — sidebarHeight - 80
+      const newHeight = Math.min(Math.max(80, startHeight + dy), sidebarHeight - 80);
+      fixedHeader!.style.height = `${newHeight}px`;
+      fixedHeader!.style.flex = 'none';
+    };
+
+    const onPointerUp = () => {
+      isDragging = false;
+      resizeDividerH!.classList.remove('dragging');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', onPointerUp);
+      // Сохраняем высоту
+      try {
+        localStorage.setItem('flashcard-header-height', String(fixedHeader!.getBoundingClientRect().height));
+      } catch {
+        /* ignore */
+      }
+    };
+
+    // Восстанавливаем сохранённую высоту
+    try {
+      const saved = localStorage.getItem('flashcard-header-height');
+      if (saved) {
+        const h = Number(saved);
+        if (h >= 80) {
+          fixedHeader.style.height = `${h}px`;
+          fixedHeader.style.flex = 'none';
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+
+    resizeDividerH.addEventListener('pointerdown', onPointerDown);
+    vResizeCleanup = () => {
+      resizeDividerH.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', onPointerUp);
+    };
+  }
+
+  /* ---------- Задача#3: Горизонтальный resize (ширина sidebar) ---------- */
+  let hResizeCleanup: (() => void) | null = null;
+  function initHorizontalResize(): void {
+    if (!resizeDividerV || !editorSidebar || hResizeCleanup) return;
+
+    let isDragging = false;
+    let startX = 0;
+    let startWidth = 0;
+
+    const onPointerDown = (e: PointerEvent) => {
+      if (editorSidebar!.classList.contains('collapsed')) return;
+      isDragging = true;
+      startX = e.clientX;
+      startWidth = editorSidebar!.getBoundingClientRect().width;
+      resizeDividerV.classList.add('dragging');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      e.preventDefault();
+      document.addEventListener('pointermove', onPointerMove);
+      document.addEventListener('pointerup', onPointerUp);
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (!isDragging) return;
+      const dx = e.clientX - startX;
+      // Минимум 240px, максимум 560px
+      const newWidth = Math.min(Math.max(240, startWidth + dx), 560);
+      editorSidebar!.style.width = `${newWidth}px`;
+      editorSidebar!.style.transition = 'none';
+    };
+
+    const onPointerUp = () => {
+      isDragging = false;
+      resizeDividerV!.classList.remove('dragging');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      editorSidebar!.style.transition = '';
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', onPointerUp);
+      // Сохраняем ширину
+      try {
+        localStorage.setItem('flashcard-sidebar-width', String(editorSidebar!.getBoundingClientRect().width));
+      } catch {
+        /* ignore */
+      }
+    };
+
+    // Восстанавливаем сохранённую ширину (cardsArea восстанавливается в init после setSidebarOpen)
+    try {
+      const saved = localStorage.getItem('flashcard-sidebar-width');
+      if (saved) {
+        const w = Number(saved);
+        if (w >= 240 && w <= 560) {
+          editorSidebar.style.width = `${w}px`;
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+
+    resizeDividerV.addEventListener('pointerdown', onPointerDown);
+    hResizeCleanup = () => {
+      resizeDividerV.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', onPointerUp);
+    };
+  }
+
   function bindStatic(): void {
     // Инициализация перетаскивания попапа слова
     makeWordPopupDraggable();
@@ -2020,6 +2160,12 @@ export function initCardConstructor(root: HTMLElement): () => void {
         scheduleSave({ silent: true });
       }
     });
+
+    // Задача#2: Вертикальный resize (высота верхней/нижней области sidebar)
+    initVerticalResize();
+
+    // Задача#3: Горизонтальный resize (ширина sidebar)
+    initHorizontalResize();
 
     // Кастомный аккордеон-dropdown темы: открытие/закрытие
     themeDropdownTrigger?.addEventListener('click', (e) => {
@@ -2435,6 +2581,8 @@ export function initCardConstructor(root: HTMLElement): () => void {
     window.removeEventListener('error', errorHandler);
     window.removeEventListener('unhandledrejection', unhandledRejection);
     if (dragCleanup) dragCleanup();
+    if (vResizeCleanup) vResizeCleanup();
+    if (hResizeCleanup) hResizeCleanup();
     if (saveTimer) clearTimeout(saveTimer);
     if (historyTimer) clearTimeout(historyTimer);
     if (toastTimer) clearTimeout(toastTimer);

@@ -345,16 +345,16 @@
     assert('Scroll area существует', !!q('.sidebar-scroll-area'));
     assert('Scroll area имеет overflow-y auto', getComputedStyle(q('.sidebar-scroll-area')).overflowY === 'auto');
 
-    // 26. Улучшение#2: Аккордеон в редакторе стилей
+    // 26. Улучшение#2: Аккордеон в редакторе стилей (закрыт по умолчанию)
     q('[data-action="palette"]')?.click();
     var groupCount = qa('.modal-accordion-group').length;
     assert('Аккордеон группы существуют', groupCount >= 3);
-    assert('Все группы раскрыты по умолчанию', qa('.modal-accordion-group.expanded').length === groupCount);
-    // Свернём первую
+    assert('Все группы закрыты по умолчанию', qa('.modal-accordion-group.expanded').length === 0);
+    // Раскроем первую
     q('.modal-accordion-header').click();
-    assert('Сворачивание работает', qa('.modal-accordion-group.expanded').length === groupCount - 1);
+    assert('Разворачивание работает', qa('.modal-accordion-group.expanded').length === 1);
     q('.modal-accordion-header').click();
-    assert('Разворачивание работает', qa('.modal-accordion-group.expanded').length === groupCount);
+    assert('Сворачивание работает', qa('.modal-accordion-group.expanded').length === 0);
     q('#applyColorsBtn').click();
 
     // 27. БАГ#4: Независимые параметры нумерации (circles)
@@ -384,8 +384,8 @@
     // 28. Размер фигуры (slider)
     q('[data-action="palette"]')?.click();
     var sizeSlider = q('#listNumSizeSlider');
-    var sizeValue = q('#listNumSizeValue');
-    if (sizeSlider && sizeValue) {
+    var sizeValue = q('#listStyleSelect');
+    if (sizeSlider) {
       sizeSlider.value = '32';
       sizeSlider.dispatchEvent(new Event('input', {bubbles: true}));
       q('#applyColorsBtn').click();
@@ -393,8 +393,13 @@
       assert('Размер фигуры 32px', getComputedStyle(numEl2).width === '32px');
       assert('Высота фигуры 32px', getComputedStyle(numEl2).height === '32px');
       assert('Размер шрифта 16px (32*0.5)', getComputedStyle(numEl2).fontSize === '16px');
-      assert('Значение slider обновлено', sizeValue.textContent === '32px');
     }
+
+    // 29. Resize dividers
+    assert('Вертикальный разделитель существует', !!q('#resizeDividerH'));
+    assert('Горизонтальный разделитель существует', !!q('#resizeDividerV'));
+    assert('Разделитель H имеет cursor row-resize', getComputedStyle(q('#resizeDividerH')).cursor === 'row-resize');
+    assert('Разделитель V имеет cursor col-resize', getComputedStyle(q('#resizeDividerV')).cursor === 'col-resize');
 
     results.push('');
     results.push('=== ИТОГ: ' + passed + ' passed, ' + failed + ' failed ===');

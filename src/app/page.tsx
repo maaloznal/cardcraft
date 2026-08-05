@@ -204,6 +204,9 @@ export default function Home() {
           </div>
           </div>
 
+          {/* Вертикальный разделитель между верхней и нижней областью */}
+          <div className="resize-divider resize-divider-h" id="resizeDividerH" title="Потяните для изменения высоты" />
+
           <div className="sidebar-scroll-area">
           <div id="editorCardsList" />
 
@@ -244,6 +247,9 @@ export default function Home() {
           </div>
         </aside>
 
+        {/* Горизонтальный разделитель между sidebar и workspace */}
+        <div className="resize-divider resize-divider-v" id="resizeDividerV" title="Потяните для изменения ширины" />
+
         <div className="sidebar-backdrop" id="sidebarBackdrop" />
 
         {/* Workspace */}
@@ -281,7 +287,7 @@ export default function Home() {
 
           <div className="color-picker-grid">
             {MODAL_GROUPS.map((group) => (
-              <div className="modal-accordion-group expanded" key={group.label}>
+              <div className="modal-accordion-group" key={group.label}>
                 <button className="modal-accordion-header" type="button" data-accordion-toggle>
                   <span>{group.label}</span>
                   <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>

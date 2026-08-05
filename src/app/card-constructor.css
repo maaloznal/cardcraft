@@ -1211,8 +1211,9 @@
 /* Улучшение#1: Независимая прокрутка редактора карточек */
 .sidebar-fixed-header {
   flex-shrink: 0;
-  border-bottom: 1px solid var(--ui-border);
+  border-bottom: none;
   overflow-y: auto;
+  min-height: 80px;
   max-height: 50vh;
 }
 .sidebar-scroll-area {
@@ -1220,6 +1221,67 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  min-height: 80px;
+}
+
+/* ================= Resize dividers ================= */
+.resize-divider {
+  position: relative;
+  flex-shrink: 0;
+  background: var(--ui-border);
+  transition: background var(--dur) var(--ease);
+  z-index: 10;
+}
+.resize-divider:hover,
+.resize-divider.dragging {
+  background: var(--ui-text);
+}
+
+/* Вертикальный разделитель (меняет высоту верхней/нижней области) */
+.resize-divider-h {
+  height: 4px;
+  cursor: row-resize;
+  width: 100%;
+  margin: 0;
+}
+.resize-divider-h::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 32px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--ui-border-strong);
+  transition: background var(--dur) var(--ease);
+}
+.resize-divider-h:hover::after,
+.resize-divider-h.dragging::after {
+  background: var(--ui-surface);
+}
+
+/* Горизонтальный разделитель (меняет ширину sidebar/workspace) */
+.resize-divider-v {
+  width: 4px;
+  cursor: col-resize;
+  align-self: stretch;
+}
+.resize-divider-v::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 32px;
+  border-radius: 1px;
+  background: var(--ui-border-strong);
+  transition: background var(--dur) var(--ease);
+}
+.resize-divider-v:hover::after,
+.resize-divider-v.dragging::after {
+  background: var(--ui-surface);
 }
 
 /* Scrollbar */
@@ -1862,6 +1924,8 @@
   justify-content: center;
   gap: 32px;
   width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
   padding-bottom: 32px;
 }
 .card-wrapper {
