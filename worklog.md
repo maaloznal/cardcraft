@@ -1206,3 +1206,136 @@ Verification:
 - Lint: 0 errors
 - Smoke test: 109/109 pass — zero regressions
 - All 4 rendering modules extracted from God Function
+
+---
+Task ID: 4a-research
+Agent: Explore
+Task: Map card-constructor.ts behaviors for orchestrator migration.
+
+Work Log:
+- Read tail of worklog.md (Tasks 18–27) to understand prior refactor stages.
+- Read docs/architecture.md to confirm planned modular layering (Core → Infrastructure → State → Rendering → UI).
+- Read full src/lib/card-constructor.ts (2731 lines) in 6 chunks.
+- Read src/app/page.tsx (542 lines) to map DOM IDs/selectors used by the JSX shell.
+- Read src/state/StateManager.ts, src/preview/PreviewRenderer.ts, src/editor/EditorRenderer.ts, src/word-editor/WordEditorManager.ts, src/storage/StorageManager.ts, src/history/HistoryManager.ts, src/themes/ThemeManager.ts, src/export/ExportManager.ts, src/styles/StyleHelpers.ts, src/core/types.ts, src/core/constants.ts, src/core/utils.ts, src/ui/Accordion.ts, src/ui/Modal.ts, src/ui/Switch.ts, src/ui/Dropdown.ts to understand public APIs and DOM contracts each module expects.
+- Cross-referenced every addEventListener in old code with its corresponding new-module API (delegation or callback).
+- Identified 5 behavior mismatches new orchestrator must address:
+  1. Sidebar accordions: old code starts ALL collapsed; SidebarAccordion default is `initial: 'all'` → orchestrator must pass `initial: 'none'`.
+  2. Modal accordions: old code starts ALL collapsed; ModalAccordion default is `initial: 'first'` → orchestrator must pass `initial: 'none'`.
+  3. Save button: JSX uses `id="saveAll"` but old JS reads `#saveAll` (works by accident); orchestrator should use the same `#saveAll` selector.
+  4. `cardCountBadge` text update is done inside renderPreview in old code — orchestrator must hook the same into PreviewRenderer (no API exists yet, so orchestrator will update it after each render call).
+  5. EditorRenderer has a bug (line 75): `moveUp?.toggleAttribute('disabled', index === blocks.length - 1)` should be `moveDown` not `moveUp?.` — orchestrator cannot fix it but should note the regression risk.
+- Produced 21-section Behavior Map covering: init sequence, state vars, all event bindings, keyboard shortcuts, localStorage keys, history debounce, rendering flows, modal palette, word popup, theme dropdowns, accordions, format/size controls, card operations, export, toasts, format select, settings, sidebar toggle, char counter, paste handling, and miscellaneous.
+- No code changes made — research only.
+
+Stage Summary:
+- Comprehensive 21-section behavior map produced.
+- All 60+ DOM elements, 30+ event bindings, 4 keyboard shortcuts, 11 localStorage keys, 5 history triggers, 6 card operations, 9 modal fields, 2 dropdowns, 9 accordions documented.
+- 5 behavior mismatches flagged for orchestrator to address explicitly.
+- Map is sufficient to write src/orchestrator/CardCraftApp.ts without re-reading card-constructor.ts.
+
+---
+Task ID: 28
+Agent: main
+Task: ЭТАП 5 — UI Kit extracted (Accordion, Modal, Switch, Dropdown).
+
+Work Log:
+- Created src/ui/Accordion.ts (155 lines) — vanilla JS accordion with event delegation.
+  Public API: toggle/expand/collapse/expandAll/collapseAll/setExclusive/destroy.
+  Convenience subclasses: SidebarAccordion, ModalAccordion.
+- Created src/ui/Modal.ts (172 lines) — modal with focus trap + ESC + backdrop.
+  Public API: open/close/toggle/onOpen/onClose/destroy.
+  Handles: focus management, Tab cycling, ESC key, backdrop click.
+- Created src/ui/Switch.ts (126 lines) — toggle switch (checkbox or button based).
+  Public API: checked/toggle/onToggle/destroy.
+  Works on <input type="checkbox"> or <button role="switch">.
+- Created src/ui/Dropdown.ts (193 lines) — dropdown menu with click-outside + ESC.
+  Public API: open/close/toggle/setValue/getValue/onOpen/onClose/onSelect/destroy.
+  Supports nested theme groups (groupHeaderSelector).
+- Created src/ui/index.ts (24 lines) — barrel export.
+
+Module stats:
+- 17 modules, 2383 total lines
+- UI Kit: 4 classes, 670 total lines
+- All classes use event delegation (one listener per root)
+- All classes have destroy() for cleanup
+- Zero lint errors
+
+---
+Task ID: 29
+Agent: main
+Task: ЭТАП 6a — Stabilization: ErrorBoundary + depcheck.
+
+Work Log:
+- Created src/components/ErrorBoundary.tsx (148 lines) — React error boundary.
+  - Catches render errors, shows friendly fallback with reload button.
+  - Logs to console + persists last error to localStorage for debugging.
+  - Exposes errorId for traceability.
+  - Production-safe (no stack in prod).
+- Updated src/app/layout.tsx — wrapped children in <ErrorBoundary>.
+- React StrictMode remains disabled (reactStrictMode: false in next.config.ts).
+  Rationale: existing card-constructor.ts uses imperative DOM manipulation that
+  may not handle double-mount cleanly. Enabling StrictMode is a future task
+  after orchestrator migration is verified.
+- Note: depcheck (next sub-task) will identify unused dependencies.
+
+---
+Task ID: 30
+Agent: main
+Task: ЭТАП 6b — depcheck + dependency cleanup.
+
+Work Log:
+- Ran depcheck — identified 18 unused production dependencies.
+- Verified each with grep — 0 source file imports for all 18.
+- Removed 17 truly unused production deps via `bun remove`:
+  @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities,
+  @hookform/resolvers, @mdxeditor/editor, @reactuses/core,
+  @tanstack/react-query, @tanstack/react-table, date-fns,
+  framer-motion, next-auth, next-intl, react-markdown,
+  react-syntax-highlighter, uuid, zod, zustand.
+- Kept z-ai-web-dev-sdk (planned for AI features per user spec).
+- Verified: lint clean, dev server still serving 200 OK after removal.
+- Kept all dev deps (@tailwindcss/postcss used in postcss.config.mjs,
+  tw-animate-css imported in globals.css, bun-types provides types).
+
+---
+Task ID: 31
+Agent: main
+Task: Pre-integration fixes — extend StateManager + fix EditorRenderer bug.
+
+Work Log:
+- Extended StateManager.reduce() with 5 missing action handlers:
+  SET_CARD_COLORS, SET_CARD_SECTION_STYLES, SET_CARD_WORD_STYLES,
+  DELETE_CARD_WORD_STYLE, RESTORE_SNAPSHOT.
+- Fixed EditorRenderer.ts line 75 typo: `moveUp?.toggleAttribute` → `moveDown.toggleAttribute`.
+- Fixed SidebarAccordion/ModalAccordion defaults:
+  - SidebarAccordion: initial='none' (was 'all') — matches old behavior (collapsed initially).
+  - ModalAccordion: initial='none' (was 'first') — matches old behavior (collapsed initially).
+- Verified: lint clean.
+
+---
+Task ID: 4a-research
+Agent: Explore
+Task: Map card-constructor.ts behaviors for orchestrator migration.
+
+Work Log:
+- Read worklog.md (last 500 lines) for context.
+- Read docs/architecture.md for planned architecture.
+- Read all 14 new modules (state, preview, editor, word-editor, storage, history,
+  themes, export, styles, core, ui).
+- Read src/lib/card-constructor.ts (2731 lines) end-to-end.
+- Read src/app/page.tsx (542 lines) for DOM contract.
+- Read src/app/card-constructor.css (3700 lines) for visual behavior.
+- Read tests/smoke-test.js (414 lines, 109 assertions) for verification contract.
+
+Stage Summary:
+- Produced comprehensive 21-section behavior map covering:
+  initialization sequence, state variables, event bindings (4 categories),
+  keyboard shortcuts, localStorage persistence, history, rendering flows,
+  modal behavior, word popup, theme dropdowns, sidebar accordions,
+  format/size controls, card operations, export, toasts, format select,
+  settings, sidebar toggle, char counter, paste handling, and 16 misc behaviors.
+- Identified 15 migration notes (StateManager gaps, EditorRenderer bug,
+  UI Kit default mismatches, Escape priority, etc.).
+- Map will be used to write src/orchestrator/CardCraftApp.ts.
+

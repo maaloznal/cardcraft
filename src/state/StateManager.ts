@@ -242,6 +242,56 @@ export class StateManager {
         list[idx] = { ...list[idx], theme };
         return { ...state, cards: { list } };
       }
+      case 'SET_CARD_COLORS': {
+        const { idx, colors } = action.payload as { idx: number; colors: Record<string, string> };
+        if (idx < 0 || idx >= state.cards.list.length) return state;
+        const list = [...state.cards.list];
+        list[idx] = { ...list[idx], colors: { ...colors } };
+        return { ...state, cards: { list } };
+      }
+      case 'SET_CARD_SECTION_STYLES': {
+        const { idx, sectionStyles } = action.payload as {
+          idx: number;
+          sectionStyles: Record<string, import('../core/types').SectionStyle>;
+        };
+        if (idx < 0 || idx >= state.cards.list.length) return state;
+        const list = [...state.cards.list];
+        list[idx] = { ...list[idx], sectionStyles: { ...sectionStyles } };
+        return { ...state, cards: { list } };
+      }
+      case 'SET_CARD_WORD_STYLES': {
+        const { idx, wordStyles } = action.payload as {
+          idx: number;
+          wordStyles: Record<string, import('../core/types').WordStyle>;
+        };
+        if (idx < 0 || idx >= state.cards.list.length) return state;
+        const list = [...state.cards.list];
+        list[idx] = { ...list[idx], wordStyles: { ...wordStyles } };
+        return { ...state, cards: { list } };
+      }
+      case 'DELETE_CARD_WORD_STYLE': {
+        const { idx, key } = action.payload as { idx: number; key: string };
+        if (idx < 0 || idx >= state.cards.list.length) return state;
+        const card = state.cards.list[idx];
+        if (!card.wordStyles || !(key in card.wordStyles)) return state;
+        const newWordStyles = { ...card.wordStyles };
+        delete newWordStyles[key];
+        const list = [...state.cards.list];
+        list[idx] = { ...card, wordStyles: newWordStyles };
+        return { ...state, cards: { list } };
+      }
+      case 'RESTORE_SNAPSHOT': {
+        const snap = action.payload as Snapshot;
+        return {
+          ...state,
+          cards: { list: deepClone(snap.cards) },
+          settings: {
+            ...state.settings,
+            theme: snap.theme,
+            format: snap.format,
+          },
+        };
+      }
       case 'CLEAR_ALL':
         return { ...state, cards: { list: [createEmptyCard()] } };
 

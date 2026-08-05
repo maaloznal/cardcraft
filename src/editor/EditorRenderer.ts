@@ -72,7 +72,7 @@ export class EditorRenderer {
     const moveUp = block.querySelector<HTMLElement>('[data-action="move"][data-dir="-1"]');
     const moveDown = block.querySelector<HTMLElement>('[data-action="move"][data-dir="1"]');
     if (moveUp) moveUp.toggleAttribute('disabled', index === 0);
-    if (moveDown) moveUp?.toggleAttribute('disabled', index === blocks.length - 1);
+    if (moveDown) moveDown.toggleAttribute('disabled', index === blocks.length - 1);
 
     // Show/hide delete button
     const delBtn = block.querySelector<HTMLElement>('[data-action="delete"]');
