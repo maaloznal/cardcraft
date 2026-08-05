@@ -11,7 +11,12 @@
                        │ calls initCardCraftApp(root)
 ┌──────────────────────▼──────────────────────────────┐
 │                Orchestrator Layer                    │
-│  src/orchestrator/CardCraftApp.ts                   │
+│  src/orchestrator/CardCraftApp.ts (main coordinator)│
+│  src/orchestrator/context.ts (shared context type)  │
+│  src/orchestrator/save-load.ts (localStorage)       │
+│  src/orchestrator/ui-appliers.ts (DOM sync)         │
+│  src/orchestrator/export-controller.ts (PNG/clip)   │
+│  src/orchestrator/keyboard-controller.ts (shortcuts)│
 │  src/orchestrator/toast.ts                          │
 │  src/orchestrator/resizers.ts                       │
 │  src/orchestrator/export-mode.ts                    │
@@ -75,12 +80,15 @@
 | Core | 4 | 582 | 146 |
 | Infrastructure | 5 | 575 | 115 |
 | State | 2 | 467 | 234 |
-| Rendering | 3 | 993 | 331 |
+| Rendering | 3 | 910 | 303 |
 | UI Kit | 5 | 718 | 144 |
-| Orchestrator + helpers | 4 | 1540 | 385 |
-| **Total** | **23** | **4875** | **212** |
+| Orchestrator + helpers | 9 | 1833 | 204 |
+| **Total** | **28** | **5085** | **181** |
 
-For comparison: the old God Function was a single 2731-line file.
+For comparison: the old God Function was a single 2731-line file. The
+orchestrator was decomposed from 1275 lines (single file) to 1054 lines
+(main coordinator) + 779 lines (8 extracted modules) = 1833 total, with
+average module size 204 lines (down from 385).
 
 ## Module Responsibilities
 
@@ -269,7 +277,9 @@ PreviewRenderer and EditorRenderer don't need `destroy()` — their event listen
 - **ESLint**: real rules enabled (only `no-console`, `no-non-null-assertion`, `no-explicit-any` relaxed for pragmatic reasons; all other rules at default severity)
 - **React StrictMode**: `reactStrictMode: true` — double-mount safe (all listeners tracked and cleaned up)
 - **Dependencies**: 8 production deps (4 fonts + html-to-image + next + react + react-dom), 10 dev deps. Removed 47 unused packages (shadcn/radix kit, prisma, sharp, recharts, z-ai-web-dev-sdk, etc.)
-- **Dead code removed**: `src/lib/card-constructor.ts`, `src/components/ui/*` (40 files), `src/hooks/*`, `src/lib/db.ts`, `src/lib/utils.ts`, `src/app/api/`, `prisma/`, `db/`
+- **Dead code removed**: `src/lib/card-constructor.ts`, `src/components/ui/*` (40 files), `src/hooks/*`, `src/lib/db.ts`, `src/lib/utils.ts`, `src/app/api/`, `prisma/`, `db/`, PreviewRenderer dead O(1) methods (`removeCard`, `insertCard`, `updateProgressBars`), EditorRenderer dead `updateCardNumber`
+- **Bundle optimization**: `html-to-image` (520KB) dynamically imported — only loaded when user triggers export (download/copy), not in main chunk. See `docs/bundle-analysis.md`.
+- **Orchestrator decomposition**: CardCraftApp.ts split from 1275 lines to 1054 (main) + 8 extracted modules (context, save-load, ui-appliers, export-controller, keyboard-controller, toast, resizers, export-mode). Average module size 204 lines (was 385).
 
 ## Verification
 
