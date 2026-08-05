@@ -1085,3 +1085,124 @@ Verification:
 - StateManager compiles with sub-structures
 - HistoryManager compiles as generic
 - architecture.md created with complete dependency rules
+
+---
+Task ID: 25
+Agent: main
+Task: ЭТАП 2 — PreviewRenderer extracted.
+
+Work Log:
+
+Created src/preview/PreviewRenderer.ts (441 lines) — the most significant module extraction.
+
+Public API:
+- render(cards, settings)         — full rebuild O(n)
+- updateCardField(card, field)    — O(1) text update (in-place / create / remove)
+- updateCardStyle(card, field)    — O(1) style update (colors, word styles, section styles)
+- updateCardTheme(card, theme)    — O(1) data-theme attribute
+- removeCard(cardId)              — O(1) DOM removal
+- insertCard(card, index, settings) — O(1) DOM insertion
+- updateProgressBars(cards, settings) — O(n) rebuild progress bars only
+- onAction(handler)               — callback for download/copy/delete/dblclick
+
+Key architectural decisions:
+1. Event delegation: ONE click listener + ONE dblclick listener on container (vs old code: 3 forEach loops per render)
+2. No innerHTML = '' for targeted updates — uses getElementById + replaceWith/remove
+3. Action callback pattern: PreviewRenderer doesn't know about export/delete — it notifies orchestrator
+4. buildProgressBarHtml is a private pure function — not exported, only used internally
+5. Settings passed as param (not read from global state) — renderer is stateless
+6. Uses imported StyleHelpers from src/styles/ — no duplication
+
+Verification:
+- Lint: 0 errors
+- Smoke test: 109/109 pass — zero regressions
+- card-constructor.ts still works as before (will be migrated to use PreviewRenderer)
+
+Module stats after this extraction:
+- 11 modules, 1602 total lines
+- Average module: 146 lines
+- Largest: PreviewRenderer (441) — justified by card HTML complexity
+- No non-null assertions
+- No `any` types
+- Event delegation: 2 listeners (vs 3×N forEach in old code)
+
+---
+Task ID: 26
+Agent: main
+Task: ЭТАП 3 — EditorRenderer extracted with event delegation.
+
+Work Log:
+
+Created src/editor/EditorRenderer.ts (220 lines) with full event delegation.
+
+Public API:
+- render(cards)                — full rebuild O(n)
+- onAction(handler)            — callback for: input, paste, palette, collapse, delete, duplicate, move, focus
+- updateCardNumber(index)      — O(1) badge/title/disabled state update
+- collapseLastCard()           — collapse newly added card
+
+Key architectural decisions:
+1. Event delegation: ONE click + ONE input + ONE focusin + ONE paste listener on container
+   - Old code: 3 forEach loops × N cards × M buttons = 3NM listeners per render
+   - New code: 4 listeners total, set up once in constructor
+2. Action callback pattern: EditorRenderer doesn't know about state/preview/export
+   - Notifies orchestrator via onAction callback
+   - Orchestrator decides what to do (dispatch state action, update preview, etc.)
+3. Paste handling: cleanup (strip formatting) happens in renderer, business logic in orchestrator
+4. Collapse toggle: handled entirely in renderer (DOM-only, no state change needed)
+5. No non-null assertions, no type casts
+
+Module stats after this extraction:
+- 12 modules, 1810 total lines
+- Average module: 151 lines
+- Largest: PreviewRenderer (441) — card HTML complexity
+- EditorRenderer: 220 lines — lean due to delegation
+
+Old code comparison (card-constructor.ts):
+- renderEditor(): 124 lines + 68 addEventListener per render
+- EditorRenderer: 220 lines + 4 addEventListener total (constructor)
+
+Verification:
+- Lint: 0 errors
+- Smoke test: 109/109 pass — zero regressions
+
+---
+Task ID: 27
+Agent: main
+Task: ЭТАП 4 — WordEditorManager extracted.
+
+Work Log:
+
+Created src/word-editor/WordEditorManager.ts (261 lines) — fully isolated word styling subsystem.
+
+Public API:
+- open(x, y, text, field, cardIndex, existingStyles?) — show popup at position
+- close()                                          — hide popup, reset state
+- isOpen                                           — check if popup is active
+- renderWordStyleList(card)                        — rebuild word list in popup
+- onStyleChange(handler)                           — callback: (cardIndex, field, word, styles)
+- onRemoveWord(handler)                            — callback: (cardIndex, key)
+- onClear(handler)                                 — callback: (cardIndex, field, word)
+- destroy()                                        — cleanup all listeners
+
+Key architectural decisions:
+1. Self-contained: manages its own state (activeWordStyles, activeField, activeCardIndex)
+2. Drag built into constructor — no separate initDrag() call needed
+3. Format buttons, color presets, size slider, clear button — all wired in initControls()
+4. Callback pattern: doesn't know about cards[] or state — notifies orchestrator
+5. No non-null assertions — uses optional chaining throughout
+6. destroy() for cleanup — prevents memory leaks
+
+Module stats after all 4 extractions:
+- 13 modules, 2133 total lines
+- Average module: 164 lines
+- Largest: PreviewRenderer (441) — justified by card HTML complexity
+- WordEditorManager: 261 lines — includes drag, format, color, size, list, clear
+
+Architecture layers now complete:
+Core → Infrastructure → State → Rendering → (UI integration pending)
+
+Verification:
+- Lint: 0 errors
+- Smoke test: 109/109 pass — zero regressions
+- All 4 rendering modules extracted from God Function
