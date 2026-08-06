@@ -46,17 +46,6 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ["*.space-z.ai"],
   basePath: "/cardcraft",
   assetPrefix: "/cardcraft",
-  async headers() {
-    return [
-      {
-        source: '/(.*)',
-        headers: Object.entries(securityHeaders).map(([key, value]) => ({
-          key,
-          value,
-        })),
-      },
-    ];
-  },
 };
 
 export default nextConfig;
