@@ -63,29 +63,48 @@ export default function Home() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-    const savedTheme = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-      setIsDark(true);
-      document.documentElement.classList.add('dark');
-    } else {
-      setIsDark(false);
-      document.documentElement.classList.remove('dark');
+    try {
+      setMounted(true);
+      const savedTheme = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      
+      console.log('[ThemeToggle] Init - savedTheme:', savedTheme, 'prefersDark:', prefersDark);
+      
+      if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+        setIsDark(true);
+        document.documentElement.classList.add('dark');
+        console.log('[ThemeToggle] Init - set to dark mode');
+      } else {
+        setIsDark(false);
+        document.documentElement.classList.remove('dark');
+        console.log('[ThemeToggle] Init - set to light mode');
+      }
+    } catch (error) {
+      console.error('[ThemeToggle] Error initializing theme:', error);
     }
   }, []);
 
   const toggleTheme = () => {
-    const newTheme = !isDark;
-    setIsDark(newTheme);
-    
-    if (newTheme) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
+    try {
+      console.log('[ThemeToggle] Current theme:', isDark ? 'dark' : 'light');
+      const newTheme = !isDark;
+      console.log('[ThemeToggle] Switching to:', newTheme ? 'dark' : 'light');
+      
+      setIsDark(newTheme);
+      
+      if (newTheme) {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+        console.log('[ThemeToggle] Added dark class to html');
+      } else {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+        console.log('[ThemeToggle] Removed dark class from html');
+      }
+      
+      console.log('[ThemeToggle] Theme switched successfully');
+    } catch (error) {
+      console.error('[ThemeToggle] Error switching theme:', error);
     }
   };
 
