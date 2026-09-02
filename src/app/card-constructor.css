@@ -3709,3 +3709,633 @@ input[type="color"].color-picker-input::-moz-color-swatch {
   color: var(--ui-danger);
   font-weight: 600;
 }
+
+/* ============================================================
+   COMPREHENSIVE RESPONSIVE SYSTEM
+   Breakpoints:
+   - Small phones:   ≤ 360px  (iPhone SE 1st gen, very old Android)
+   - Phones:         361-414px (most iPhones, standard Android)
+   - Large phones:   415-480px (iPhone Pro Max, large Android)
+   - Small tablets:  481-600px (iPad mini portrait)
+   - Tablets:        601-768px (iPad portrait)
+   - Large tablets:  769-1023px (iPad landscape, small desktop)
+   - Desktop:        ≥ 1024px  (default styles)
+   ============================================================ */
+
+/* ─── SMALL PHONES (≤ 360px) — iPhone SE 1st, old Android ─── */
+@media (max-width: 360px) {
+  /* Top bar — максимально компактный */
+  .cc-root .top-bar {
+    height: 48px;
+    padding: 0 8px;
+    gap: 8px;
+  }
+  .cc-root .sidebar-toggle {
+    width: 32px;
+    height: 32px;
+  }
+  .cc-root .sidebar-toggle svg {
+    width: 16px;
+    height: 16px;
+  }
+  .cc-root .brand-name {
+    font-size: 13px;
+  }
+  .cc-root .card-count-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+  .cc-root .top-bar-right .btn-icon {
+    width: 32px;
+    height: 32px;
+  }
+  .cc-root .top-bar-right .btn-icon svg {
+    width: 14px;
+    height: 14px;
+  }
+  .cc-root .top-bar-right .btn-primary {
+    padding: 0 10px;
+    font-size: 11px;
+    height: 30px;
+  }
+
+  /* Sidebar — на весь экран */
+  .cc-root .editor-sidebar {
+    width: 100vw;
+    max-width: 100vw;
+    top: 48px;
+    height: calc(100vh - 48px);
+  }
+
+  /* Preview workspace */
+  .cc-root .preview-workspace {
+    padding: 12px 8px;
+  }
+  .cc-root .cards-container {
+    gap: 12px;
+  }
+
+  /* Card — full width, smaller padding */
+  .cc-root .card {
+    width: 100%;
+    padding: 20px;
+    min-height: 300px;
+    gap: 12px;
+  }
+  .cc-root .card[data-format="dynamic"] {
+    min-height: auto;
+    padding: 20px;
+  }
+
+  /* Card actions — чуть меньше */
+  .cc-root .card-actions {
+    gap: 4px;
+  }
+  .cc-root .card-actions .btn-card-action {
+    width: 32px;
+    height: 32px;
+  }
+  .cc-root .card-actions .btn-card-action svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  /* Editor card blocks */
+  .cc-root .card-editor-block {
+    padding: 10px;
+  }
+  .cc-root .card-editor-header {
+    padding: 0 2px 8px;
+  }
+  .cc-root .card-editor-actions {
+    gap: 2px;
+  }
+  .cc-root .card-editor-actions .btn-icon {
+    width: 28px;
+    height: 28px;
+  }
+  .cc-root .card-editor-actions .btn-icon svg {
+    width: 12px;
+    height: 12px;
+  }
+  .cc-root .card-editor-actions .btn-delete {
+    width: 28px;
+    height: 28px;
+  }
+
+  /* Modal — на весь экран */
+  .cc-root .modal-overlay {
+    justify-content: stretch;
+  }
+  .cc-root .modal-card {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  /* Word popup — максимально компактный */
+  .cc-root .word-style-popup {
+    width: calc(100vw - 16px);
+    max-width: calc(100vw - 16px);
+    left: 8px !important;
+    right: 8px;
+  }
+
+  /* Toast */
+  .cc-root .toast {
+    bottom: 12px;
+    left: 8px !important;
+    right: 8px;
+    transform: none;
+    max-width: none;
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+  .cc-root .toast.show {
+    transform: none;
+  }
+
+  /* Confirm overlay */
+  .cc-root .confirm-overlay .confirm-dialog {
+    width: calc(100vw - 32px);
+    max-width: calc(100vw - 32px);
+    padding: 20px 16px;
+  }
+
+  /* Form inputs — минимум 40px touch target, prevent iOS zoom */
+  .cc-root input[type="text"],
+  .cc-root input[type="color"],
+  .cc-root textarea,
+  .cc-root select {
+    min-height: 40px;
+    font-size: 14px;
+  }
+
+  /* Color picker grid — 2 columns on tiny screens */
+  .cc-root .color-picker-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* Sidebar accordions — компактнее */
+  .cc-root .sidebar-accordion-header {
+    padding: 10px 12px;
+    font-size: 11px;
+  }
+  .cc-root .sidebar-accordion-body {
+    padding: 0 12px 10px;
+  }
+  .cc-root .sidebar-section {
+    padding: 10px 12px;
+  }
+}
+
+/* ─── PHONES (361-414px) — most iPhones, standard Android ─── */
+@media (min-width: 361px) and (max-width: 414px) {
+  /* Top bar */
+  .cc-root .top-bar {
+    height: 52px;
+    padding: 0 12px;
+  }
+  .cc-root .sidebar-toggle {
+    width: 34px;
+    height: 34px;
+  }
+  .cc-root .brand-name {
+    font-size: 14px;
+  }
+  .cc-root .top-bar-right .btn-primary {
+    padding: 0 12px;
+    font-size: 12px;
+    height: 32px;
+  }
+
+  /* Sidebar — почти на весь экран, оставляем margin для ощущения overlay */
+  .cc-root .editor-sidebar {
+    width: calc(100vw - 32px);
+    max-width: 340px;
+    top: 52px;
+    height: calc(100vh - 52px);
+  }
+
+  /* Preview */
+  .cc-root .preview-workspace {
+    padding: 16px 12px;
+  }
+  .cc-root .cards-container {
+    gap: 16px;
+  }
+
+  /* Card */
+  .cc-root .card {
+    width: 100%;
+    padding: 24px;
+    min-height: 360px;
+  }
+  .cc-root .card[data-format="dynamic"] {
+    min-height: auto;
+  }
+
+  /* Modal — почти на весь экран */
+  .cc-root .modal-card {
+    width: 100vw;
+    max-width: 100vw;
+  }
+
+  /* Word popup */
+  .cc-root .word-style-popup {
+    width: calc(100vw - 24px);
+    max-width: 380px;
+    left: 12px !important;
+  }
+
+  /* Toast */
+  .cc-root .toast {
+    bottom: 16px;
+    left: 12px !important;
+    right: 12px;
+    transform: none;
+    max-width: none;
+    text-align: center;
+    white-space: normal;
+  }
+  .cc-root .toast.show {
+    transform: none;
+  }
+
+  /* Confirm dialog */
+  .cc-root .confirm-overlay .confirm-dialog {
+    width: calc(100vw - 32px);
+    max-width: 360px;
+  }
+
+  /* Form inputs — 44px touch target, prevent iOS zoom */
+  .cc-root input[type="text"],
+  .cc-root input[type="color"],
+  .cc-root textarea,
+  .cc-root select {
+    min-height: 44px;
+    font-size: 16px; /* iOS Safari не зумит при focus если ≥16px */
+  }
+
+  /* Card editor — компактнее */
+  .cc-root .card-editor-block {
+    padding: 12px;
+  }
+  .cc-root .card-editor-actions .btn-icon,
+  .cc-root .card-editor-actions .btn-delete {
+    width: 30px;
+    height: 30px;
+  }
+
+  /* Sidebar accordions */
+  .cc-root .sidebar-accordion-header {
+    padding: 11px 16px;
+  }
+  .cc-root .sidebar-accordion-body {
+    padding: 0 16px 12px;
+  }
+  .cc-root .sidebar-section {
+    padding: 12px 16px;
+  }
+}
+
+/* ─── LARGE PHONES (415-480px) — iPhone Pro Max, large Android ─── */
+@media (min-width: 415px) and (max-width: 480px) {
+  /* Top bar */
+  .cc-root .top-bar {
+    height: 56px;
+    padding: 0 16px;
+  }
+
+  /* Sidebar — 320px width, overlay */
+  .cc-root .editor-sidebar {
+    width: 320px;
+    max-width: calc(100vw - 24px);
+    top: 56px;
+    height: calc(100vh - 56px);
+  }
+
+  /* Preview */
+  .cc-root .preview-workspace {
+    padding: 20px 16px;
+  }
+  .cc-root .cards-container {
+    gap: 20px;
+  }
+
+  /* Card — 380px или full width */
+  .cc-root .card {
+    width: 100%;
+    max-width: 380px;
+    margin: 0 auto;
+    padding: 28px;
+    min-height: 400px;
+  }
+
+  /* Modal — 340px или full width */
+  .cc-root .modal-card {
+    width: 340px;
+    max-width: calc(100vw - 16px);
+  }
+
+  /* Form inputs — 44px touch target */
+  .cc-root input[type="text"],
+  .cc-root input[type="color"],
+  .cc-root textarea,
+  .cc-root select {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  /* Toast */
+  .cc-root .toast {
+    bottom: 20px;
+    max-width: calc(100vw - 32px);
+  }
+}
+
+/* ─── SMALL TABLETS (481-600px) — iPad mini portrait ─── */
+@media (min-width: 481px) and (max-width: 600px) {
+  /* Top bar — стандартный */
+  .cc-root .top-bar {
+    height: 56px;
+    padding: 0 20px;
+  }
+
+  /* Sidebar — 300px, overlay */
+  .cc-root .editor-sidebar {
+    width: 300px;
+    max-width: 80vw;
+    top: 56px;
+    height: calc(100vh - 56px);
+  }
+
+  /* Preview — больше padding, карточка по центру */
+  .cc-root .preview-workspace {
+    padding: 24px 20px;
+  }
+  .cc-root .cards-container {
+    gap: 24px;
+  }
+  .cc-root .card {
+    width: 380px;
+    max-width: 100%;
+    margin: 0 auto;
+  }
+
+  /* Modal — 340px справа */
+  .cc-root .modal-card {
+    width: 340px;
+    max-width: calc(100vw - 24px);
+  }
+
+  /* Form inputs — 44px touch target */
+  .cc-root input[type="text"],
+  .cc-root input[type="color"],
+  .cc-root textarea,
+  .cc-root select {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  /* Card editor — можно показать чуть больше деталей */
+  .cc-root .card-editor-block {
+    padding: 14px;
+  }
+}
+
+/* ─── TABLETS (601-768px) — iPad portrait ─── */
+@media (min-width: 601px) and (max-width: 768px) {
+  /* Sidebar — 300px, overlay */
+  .cc-root .editor-sidebar {
+    width: 300px;
+    max-width: 70vw;
+    top: 56px;
+    height: calc(100vh - 56px);
+  }
+
+  /* Preview — карточка по центру, больше воздуха */
+  .cc-root .preview-workspace {
+    padding: 32px 24px;
+  }
+  .cc-root .cards-container {
+    gap: 28px;
+  }
+  .cc-root .card {
+    width: 380px;
+    margin: 0 auto;
+  }
+
+  /* Modal — 360px справа */
+  .cc-root .modal-card {
+    width: 360px;
+    max-width: calc(100vw - 32px);
+  }
+
+  /* Form inputs — 44px touch target */
+  .cc-root input[type="text"],
+  .cc-root input[type="color"],
+  .cc-root textarea,
+  .cc-root select {
+    min-height: 44px;
+  }
+
+  /* Card editor — можно 2-колоночный layout для format buttons */
+  .cc-root .format-btn-section-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+}
+
+/* ─── LARGE TABLETS (769-1023px) — iPad landscape, small desktop ─── */
+@media (min-width: 769px) and (max-width: 1023px) {
+  /* Sidebar — 300px, overlay (всё ещё mobile pattern) */
+  .cc-root .editor-sidebar {
+    width: 300px;
+    max-width: 60vw;
+    top: 56px;
+    height: calc(100vh - 56px);
+  }
+
+  /* Preview */
+  .cc-root .preview-workspace {
+    padding: 32px 28px;
+  }
+  .cc-root .cards-container {
+    gap: 32px;
+  }
+  .cc-root .card {
+    width: 380px;
+    margin: 0 auto;
+  }
+
+  /* Modal — 360px */
+  .cc-root .modal-card {
+    width: 360px;
+  }
+}
+
+/* ─── LANDSCAPE ORIENTATION (phones rotated) ─── */
+@media (max-height: 480px) and (orientation: landscape) {
+  /* Top bar — тоньше в landscape */
+  .cc-root .top-bar {
+    height: 44px;
+  }
+  .cc-root .sidebar-toggle {
+    width: 32px;
+    height: 32px;
+  }
+
+  /* Sidebar — адаптируем под landscape */
+  .cc-root .editor-sidebar {
+    top: 44px;
+    height: calc(100vh - 44px);
+    width: 280px;
+  }
+
+  /* Modal — на весь экран в landscape */
+  .cc-root .modal-overlay {
+    align-items: stretch;
+    justify-content: center;
+  }
+  .cc-root .modal-card {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    transform: translateY(100%);
+  }
+  .cc-root .modal-overlay.active .modal-card {
+    transform: translateY(0);
+  }
+
+  /* Word popup — центрируем в landscape */
+  .cc-root .word-style-popup {
+    width: calc(100vw - 32px);
+    max-width: 480px;
+    left: 50% !important;
+    transform: translateX(-50%);
+  }
+  .cc-root .word-style-popup.active {
+    transform: translateX(-50%);
+  }
+
+  /* Card — меньше min-height в landscape */
+  .cc-root .card {
+    min-height: 240px;
+  }
+  .cc-root .card[data-format="dynamic"] {
+    min-height: auto;
+  }
+}
+
+/* ─── SAFE AREA (notch, home indicator) ─── */
+@supports (padding: env(safe-area-inset-top)) {
+  .top-bar {
+    padding-top: env(safe-area-inset-top);
+    height: calc(56px + env(safe-area-inset-top));
+  }
+  .editor-sidebar {
+    top: calc(56px + env(safe-area-inset-top));
+    height: calc(100vh - 56px - env(safe-area-inset-top));
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .modal-card {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .toast {
+    bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+  .confirm-overlay .confirm-dialog {
+    margin-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* ─── TOUCH TARGET ENFORCEMENT (all touch devices) ─── */
+@media (hover: none) and (pointer: coarse) {
+  /* Все интерактивные элементы — минимум 44x44px touch target (Apple HIG) */
+  .btn-icon,
+  .btn-card-action,
+  .btn-delete,
+  .btn-primary,
+  .btn-secondary,
+  .sidebar-toggle,
+  .modal-close,
+  .word-list-remove,
+  .format-btn,
+  .format-btn-section,
+  .color-preset,
+  .color-swatch,
+  .theme-item,
+  .modal-card-theme-item,
+  .btn-card-editor-palette {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Убираем hover-эффекты на touch (предотвращает залипание) */
+  .card-wrapper:hover .card {
+    transform: none;
+    box-shadow: var(--card-shadow);
+  }
+  .btn-icon:hover,
+  .btn-card-action:hover,
+  .sidebar-toggle:hover {
+    background: inherit;
+    color: inherit;
+  }
+
+  /* Active state вместо hover для touch feedback */
+  .btn-icon:active,
+  .btn-card-action:active,
+  .sidebar-toggle:active,
+  .btn-primary:active,
+  .btn-secondary:active {
+    transform: scale(0.96);
+    opacity: 0.8;
+  }
+}
+
+/* ─── DARK MODE (system preference) ─── */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    /* Тёмная тема UI chrome (не карточек) — только если пользователь не выбрал светлую тему карточки */
+    --ui-bg: #0a0a0b;
+    --ui-surface: #18181b;
+    --ui-surface-hover: #27272a;
+    --ui-border: #27272a;
+    --ui-border-strong: #3f3f46;
+    --ui-text: #fafafa;
+    --ui-text-secondary: #a1a1aa;
+    --ui-text-tertiary: #71717a;
+    --ui-accent: #6366f1;
+    --ui-accent-fg: #ffffff;
+    --ui-focus: #6366f1;
+    --ui-danger: #ef4444;
+    --ui-danger-bg: #450a0a;
+    --ui-danger-border: #7f1d1d;
+    --ui-overlay: rgba(0, 0, 0, 0.6);
+  }
+  .top-bar {
+    background: rgba(10, 10, 11, 0.85);
+  }
+}
+
+/* ─── REDUCED MOTION (accessibility) ─── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .card-wrapper:hover .card {
+    transform: none;
+  }
+}
+

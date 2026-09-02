@@ -1614,3 +1614,49 @@ Stage Summary:
 - Bundle optimized with dynamic import for html-to-image.
 - Documentation updated with decomposition details and bundle analysis.
 - Project is production-ready: 109/109 smoke + 232 unit tests + 0 lint/TS errors.
+
+---
+Task ID: responsive-adaptation
+Agent: main
+Task: Comprehensive responsive adaptation for all mobile screen sizes.
+
+Work Log:
+- Added viewport meta with viewportFit: "cover" for safe area support.
+- Added comprehensive responsive system in card-constructor.css (630+ lines):
+  - 6 breakpoints: ≤360px (small phones), 361-414px (phones),
+    415-480px (large phones), 481-600px (small tablets), 601-768px (tablets),
+    769-1023px (large tablets), ≥1024px (desktop default)
+  - Landscape orientation support (max-height: 480px)
+  - Safe area insets (notch, home indicator) via env(safe-area-inset-*)
+  - Touch target enforcement (44x44px min) for all interactive elements
+  - Dark mode (system preference) for UI chrome
+  - Reduced motion (accessibility)
+- All selectors use .cc-root prefix for higher specificity (overrides existing rules).
+- Each breakpoint has:
+  - Optimized top bar height (48/52/56px)
+  - Appropriate sidebar width (full screen / 320px / 300px)
+  - Card width and min-height adjustments
+  - Form input min-height (44px touch target, 16px font to prevent iOS zoom)
+  - Modal sizing (full screen on phones, 340-360px on tablets)
+  - Word popup positioning
+  - Toast positioning
+  - Confirm dialog sizing
+
+Verification:
+- 360px (iPhone SE): topBar 48px, card 267px wide, min-height 300px, padding 20px ✓
+- 414px (iPhone): topBar 52px, card 275px wide, min-height 360px, input 44px/16px ✓
+- 768px (iPad): topBar 56px, card 380px centered, min-height 400px ✓
+- 1280px (desktop): sidebar 300px open, card 380px ✓
+- 896×414 landscape: topBar 44px, card min-height 240px ✓
+- Smoke tests: 109/109 at all sizes ✓
+- Unit tests: 232 passed ✓
+- Lint: 0 errors ✓
+
+Stage Summary:
+- All mobile screen sizes from 320px to 1023px covered with dedicated breakpoints.
+- Touch targets meet Apple HIG (44x44px minimum).
+- iOS zoom prevention (font-size ≥16px on inputs).
+- Safe area support for notch/home indicator.
+- Dark mode follows system preference.
+- Landscape orientation handled separately.
+- No regressions — 109/109 smoke + 232 unit tests pass.
