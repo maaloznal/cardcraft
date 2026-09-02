@@ -4345,6 +4345,30 @@ input[type="color"].color-picker-input::-moz-color-swatch {
   }
 }
 
+/* ─── DARK MODE (manual toggle) ─── */
+.dark :root:not([data-theme]),
+.dark {
+  /* Тёмная тема UI chrome при ручном переключении */
+  --ui-bg: #0a0a0b;
+  --ui-surface: #18181b;
+  --ui-surface-hover: #27272a;
+  --ui-border: #27272a;
+  --ui-border-strong: #3f3f46;
+  --ui-text: #fafafa;
+  --ui-text-secondary: #a1a1aa;
+  --ui-text-tertiary: #71717a;
+  --ui-accent: #6366f1;
+  --ui-accent-fg: #ffffff;
+  --ui-focus: #6366f1;
+  --ui-danger: #ef4444;
+  --ui-danger-bg: #450a0a;
+  --ui-danger-border: #7f1d1d;
+  --ui-overlay: rgba(0, 0, 0, 0.6);
+}
+.dark .top-bar {
+  background: rgba(10, 10, 11, 0.85);
+}
+
 /* ─── REDUCED MOTION (accessibility) ─── */
 @media (prefers-reduced-motion: reduce) {
   *,
