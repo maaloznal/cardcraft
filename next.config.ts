@@ -1,11 +1,10 @@
 import type { NextConfig } from "next";
 
 /**
- * Content Security Policy:
+ * Content Security Policy (applied via meta tag in layout.tsx for static export):
  * - default-src 'self': only allow resources from same origin by default
- * - script-src 'self' 'unsafe-inline': allow inline scripts (Next.js requires this in dev)
- *   Note: 'unsafe-inline' is needed because Next.js injects inline scripts for hydration.
- *   In a future hardening pass, replace with nonces.
+ * - script-src 'self' 'unsafe-inline' 'unsafe-eval': allow inline scripts (Next.js hydration)
+ *   + 'unsafe-eval' required by React dev mode
  * - style-src 'self' 'unsafe-inline': allow inline styles (Next.js, styled components)
  * - img-src 'self' data: blob:: allow data: URIs (PNG export), blob: for clipboard
  * - font-src 'self' data:: allow data: font URIs
@@ -15,10 +14,13 @@ import type { NextConfig } from "next";
  * - form-action 'self': restrict form submissions
  * - frame-ancestors 'none': prevent clickjacking (X-Frame-Options: DENY equivalent)
  * - upgrade-insecure-requests: force HTTPS
+ *
+ * Note: Next.js headers() function does not work with output: "export".
+ * CSP is applied via <meta http-equiv="Content-Security-Policy"> in layout.tsx.
  */
-const cspHeader = [
+export const CSP_HEADER = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
@@ -30,30 +32,22 @@ const cspHeader = [
   "upgrade-insecure-requests",
 ].join('; ');
 
-const securityHeaders = {
-  'Content-Security-Policy': cspHeader,
-  'X-Frame-Options': 'DENY',
-  'X-Content-Type-Options': 'nosniff',
-  'Referrer-Policy': 'strict-origin-when-cross-origin',
-  'X-DNS-Prefetch-Control': 'on',
-  'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), browsing-topics=()',
-  'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
-};
+const isProd = process.env.NODE_ENV === 'production';
+const GITHUB_PAGES_BASE = '/cardcraft';
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  // Static export for GitHub Pages
+  output: "export",
+  // basePath only in production — dev server stays at root for local testing
+  basePath: isProd ? GITHUB_PAGES_BASE : '',
+  assetPrefix: isProd ? `${GITHUB_PAGES_BASE}/` : '',
   reactStrictMode: true,
   allowedDevOrigins: ["*.space-z.ai"],
-  async headers() {
-    return [
-      {
-        source: '/(.*)',
-        headers: Object.entries(securityHeaders).map(([key, value]) => ({
-          key,
-          value,
-        })),
-      },
-    ];
+  // trailingSlash: true — recommended for GitHub Pages static hosting
+  trailingSlash: true,
+  // images: unoptimized required for static export
+  images: {
+    unoptimized: true,
   },
 };
 

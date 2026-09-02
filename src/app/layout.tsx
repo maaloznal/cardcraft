@@ -6,6 +6,7 @@ import "@fontsource/manrope";
 import "@fontsource/plus-jakarta-sans";
 import "./globals.css";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { CSP_HEADER } from "../../next.config";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -42,6 +43,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru" suppressHydrationWarning>
+      <head>
+        {/* CSP via meta tag — headers() doesn't work with output: "export" */}
+        <meta httpEquiv="Content-Security-Policy" content={CSP_HEADER} />
+        <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
+        <meta httpEquiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
