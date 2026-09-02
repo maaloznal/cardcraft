@@ -872,10 +872,11 @@ export function initCardConstructor(root: HTMLElement): () => void {
     editorCardsList
       .querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input[data-field], textarea[data-field]')
       .forEach((el) => {
-        el.addEventListener('input', function () {
-          const idx = Number(this.dataset.index);
-          const field = this.dataset.field as keyof Card;
-          cards[idx][field] = this.value as never;
+        el.addEventListener('input', (e) => {
+          const target = e.currentTarget as HTMLInputElement | HTMLTextAreaElement;
+          const idx = Number(target.dataset.index);
+          const field = target.dataset.field as keyof Card;
+          cards[idx][field] = target.value as never;
           // фикс #14: очистка «осиротевших» стилей слов
           pruneOrphanWordStyles(cards[idx]);
           // Оптимизация: точечное обновление вместо полной перестройки
@@ -887,23 +888,26 @@ export function initCardConstructor(root: HTMLElement): () => void {
         });
 
         // Обновление счётчика при фокусе
-        el.addEventListener('focus', function () {
-          updateCharCounter(Number(this.dataset.index));
+        el.addEventListener('focus', (e) => {
+          const target = e.currentTarget as HTMLInputElement | HTMLTextAreaElement;
+          updateCharCounter(Number(target.dataset.index));
         });
 
         // Жёсткая очистка при вставке
-        el.addEventListener('paste', function (e) {
+        el.addEventListener('paste', (e) => {
           e.preventDefault();
-          const text = (e.clipboardData || window.clipboardData).getData('text');
-          const field = this.dataset.field || '';
+          const clipboardEvent = e as ClipboardEvent;
+          const text = clipboardEvent.clipboardData?.getData('text') || '';
+          const target = e.currentTarget as HTMLInputElement | HTMLTextAreaElement;
+          const field = target.dataset.field || '';
           const multiline = ['subtitle', 'text', 'listItems'].includes(field);
           const cleanText = multiline ? text : text.replace(/\s+/g, ' ').trim();
-          const start = (this as HTMLInputElement).selectionStart ?? 0;
-          const end = (this as HTMLInputElement).selectionEnd ?? 0;
-          const cur = (this as HTMLInputElement).value;
-          (this as HTMLInputElement).value = cur.substring(0, start) + cleanText + cur.substring(end);
-          const idx = Number(this.dataset.index);
-          (cards[idx][field as keyof Card] as string) = (this as HTMLInputElement).value;
+          const start = target.selectionStart ?? 0;
+          const end = target.selectionEnd ?? 0;
+          const cur = target.value;
+          target.value = cur.substring(0, start) + cleanText + cur.substring(end);
+          const idx = Number(target.dataset.index);
+          (cards[idx][field as keyof Card] as string) = target.value;
           pruneOrphanWordStyles(cards[idx]);
           // Оптимизация: точечное обновление вместо полной перестройки
           updatePreviewField(idx, field);
@@ -1413,8 +1417,8 @@ export function initCardConstructor(root: HTMLElement): () => void {
 
     // Двойной клик по текстовым элементам превью — делегирование событий
     // (работает для текущих и будущих элементов, созданных через createFieldElement)
-    if (!cardsArea.__dblclickBound) {
-      cardsArea.__dblclickBound = true;
+    if (!(cardsArea as any).__dblclickBound) {
+      (cardsArea as any).__dblclickBound = true;
       cardsArea.addEventListener('dblclick', function (e) {
         const target = e.target as HTMLElement;
         const el = target.closest<HTMLElement>('[data-field]');
@@ -2610,7 +2614,11 @@ export function initCardConstructor(root: HTMLElement): () => void {
         }
       });
       // Точечное обновление всех полей карточки
-      MODAL_FIELDS.forEach((f) => updateCardField(activeCardIndexForColors, f.key));
+      MODAL_FIELDS.forEach((f) => {
+        if (activeCardIndexForColors !== null) {
+          updateCardField(activeCardIndexForColors, f.key);
+        }
+      });
       pushHistory();
       scheduleSave({ silent: true });
       showToast('Все кастомные цвета и стили карточки сброшены');

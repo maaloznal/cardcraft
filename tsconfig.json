@@ -41,6 +41,7 @@
     "examples",
     "skills",
     "tool-results",
-    "tests/smoke-test.js"
+    "tests",
+    "vitest.config.ts"
   ]
 }
