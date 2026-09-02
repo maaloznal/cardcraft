@@ -1484,6 +1484,27 @@
   white-space: nowrap;
 }
 
+/* Кнопка переключения темы */
+.theme-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border: none;
+  background: transparent;
+  color: var(--ui-text);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 0.2s, color 0.2s;
+  margin-left: 8px;
+}
+.theme-toggle-btn:hover {
+  background-color: var(--btn-accent-bg);
+}
+.theme-toggle-btn svg {
+  display: block;
+}
+
 /* Toggle кнопка (в top bar, не плавающая) */
 .sidebar-toggle {
   display: flex;

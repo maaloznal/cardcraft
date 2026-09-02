@@ -6,7 +6,6 @@ import "@fontsource/manrope";
 import "@fontsource/plus-jakarta-sans";
 import "./globals.css";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { CSP_HEADER } from "../../next.config";
 
 const geistSans = Geist({
@@ -61,7 +60,6 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
         <ErrorBoundary>
-          <ThemeToggle />
           {children}
         </ErrorBoundary>
       </body>
