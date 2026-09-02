@@ -8,6 +8,7 @@ const initCardConstructor = initCardCraftApp;
 
 const FORMATS = [
   { value: 'auto', label: 'Стандартный — 380×auto' },
+  { value: 'dynamic', label: 'Динамический — по контенту' },
   { value: 'aspect-4-5', label: 'Instagram — 1080×1350' },
   { value: 'aspect-9-16', label: 'Stories — 1080×1920' },
   { value: 'whatsapp', label: 'WhatsApp — 1080×1920' },

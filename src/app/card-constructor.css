@@ -2366,6 +2366,17 @@
   min-height: 200px;
   justify-content: space-between;
 }
+/* Dynamic format — card height adapts to content.
+   No forced min-height, card shrinks to fit its content.
+   Useful when a card has only a title or minimal text. */
+.card[data-format="dynamic"] {
+  min-height: auto;
+  height: auto;
+  justify-content: flex-start;
+}
+.card[data-format="dynamic"] .card-bottom-content {
+  margin-top: auto;
+}
 
 /* Hover — карточка приподнимается */
 .cc-root .card-wrapper:hover .card {

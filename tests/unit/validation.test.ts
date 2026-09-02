@@ -103,6 +103,7 @@ describe('sanitizeTheme', () => {
 describe('sanitizeFormat', () => {
   it('returns valid format', () => {
     expect(sanitizeFormat('auto')).toBe('auto');
+    expect(sanitizeFormat('dynamic')).toBe('dynamic');
     expect(sanitizeFormat('aspect-4-5')).toBe('aspect-4-5');
     expect(sanitizeFormat('vk')).toBe('vk');
   });
@@ -413,7 +414,7 @@ describe('whitelist sets', () => {
     expect(VALID_FORMATS.has('auto')).toBe(true);
     expect(VALID_FORMATS.has('aspect-4-5')).toBe(true);
     expect(VALID_FORMATS.has('vk')).toBe(true);
-    expect(VALID_FORMATS.size).toBe(6);
+    expect(VALID_FORMATS.size).toBe(7);
   });
   it('whitelist rejects injection attempts', () => {
     expect(VALID_THEMES.has('x" onclick="alert(1)')).toBe(false);

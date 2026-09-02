@@ -20,6 +20,7 @@ export const VALID_THEMES: ReadonlySet<string> = new Set(
 /** Set of all valid format values */
 export const VALID_FORMATS: ReadonlySet<string> = new Set([
   'auto',
+  'dynamic',
   'aspect-4-5',
   'aspect-9-16',
   'whatsapp',
