@@ -42,6 +42,11 @@
     "skills",
     "tool-results",
     "tests",
-    "vitest.config.ts"
+    "vitest.config.ts",
+    "src/components/ui",
+    "src/lib/db.ts",
+    "src/lib/utils.ts",
+    "src/hooks",
+    "tailwind.config.ts"
   ]
 }
